@@ -75,51 +75,57 @@ def _semver_greater(a: tuple[int, int, int], b: tuple[int, int, int]) -> bool:
 # ─────────────────────────────────────────────────────────────
 
 GITHUB_REPO = "Bavarianator/Brokus"
-GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+GITHUB_RELEASES_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases"
 GITHUB_TAGS_API = f"https://api.github.com/repos/{GITHUB_REPO}/tags"
 REQUEST_TIMEOUT = 10  # seconds
+
+
+def _fetch_json(url: str) -> Optional[dict | list]:
+    """Fetch a URL and parse JSON. Returns None on error."""
+    try:
+        req = urlopen(url, timeout=REQUEST_TIMEOUT)
+        return json.loads(req.read().decode())
+    except Exception as e:
+        log.debug(f"GitHub API fetch failed: {url} — {e}")
+        return None
 
 
 def _fetch_latest_from_github() -> tuple[str, str, str]:
     """Fetch the latest version from GitHub.
 
-    Tries releases/latest first, then falls back to tags.
+    Strategy:
+    1. Fetch all releases from GitHub Releases API
+    2. Find the first published release that has a tag
+    3. The tag can be semver (e.g. v1.0.1) or any string (e.g. "ai")
 
     Returns:
         Tuple of (version_str, release_url, release_notes).
         On error, returns ("", "", error_message).
     """
-    # Try releases API first
-    try:
-        req = urlopen(GITHUB_API, timeout=REQUEST_TIMEOUT)
-        data = json.loads(req.read().decode())
-        tag = data.get("tag_name", "").lstrip("v")
-        url = data.get("html_url", "")
-        notes = data.get("body", "") or ""
-        if tag and _parse_semver(tag) != (0, 0, 0):
-            return tag, url, notes
-    except URLError as e:
-        return ("", "", f"Network error: {e.reason}")
-    except (json.JSONDecodeError, KeyError) as e:
-        log.debug(f"GitHub releases API parse failed: {e}")
-    except Exception as e:
-        log.debug(f"GitHub releases API failed: {e}")
+    # Strategy 1: Fetch all releases, find first published one
+    data = _fetch_json(GITHUB_RELEASES_API)
+    if data and isinstance(data, list):
+        for release in data:
+            tag = release.get("tag_name", "")
+            if not tag:
+                continue
+            # Skip drafts
+            if release.get("draft", False):
+                continue
+            tag_clean = tag.lstrip("v")
+            url = release.get("html_url", "") or f"https://github.com/{GITHUB_REPO}/releases/tag/{tag}"
+            notes = release.get("body", "") or ""
+            return (tag_clean, url, notes)
 
-    # Fallback: tags API
-    try:
-        req = urlopen(GITHUB_TAGS_API, timeout=REQUEST_TIMEOUT)
-        data = json.loads(req.read().decode())
-        if data and isinstance(data, list):
-            tag = data[0].get("name", "").lstrip("v")
-            url = f"https://github.com/{GITHUB_REPO}/releases/tag/{data[0].get('name', '')}"
-            if tag and _parse_semver(tag) != (0, 0, 0):
-                return tag, url, ""
-    except URLError as e:
-        return ("", "", f"Network error: {e.reason}")
-    except Exception as e:
-        log.debug(f"GitHub tags API failed: {e}")
+    # Strategy 2: Fallback — tags API (falls releases leer sind)
+    data = _fetch_json(GITHUB_TAGS_API)
+    if data and isinstance(data, list) and len(data) > 0:
+        tag = data[0].get("name", "").lstrip("v")
+        url = f"https://github.com/{GITHUB_REPO}/releases/tag/{data[0].get('name', '')}"
+        if tag:
+            return (tag, url, "")
 
-    return ("", "", "Could not fetch version from GitHub")
+    return ("", "", "Could not fetch version from GitHub — kein Release gefunden")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -151,17 +157,26 @@ async def check_for_updates() -> UpdateStatus:
     result.release_url = release_url
     result.release_notes = release_notes
 
+    # Versionen vergleichen: erst Semver, dann String
     current_semver = _parse_semver(current_version)
     latest_semver = _parse_semver(latest_ver)
 
     if current_semver == (0, 0, 0):
-        result.error = f"Could not parse current version: {current_version!r}"
-        return result
+        current_semver = None
     if latest_semver == (0, 0, 0):
-        result.error = f"Could not parse latest version: {latest_ver!r}"
-        return result
+        latest_semver = None
 
-    result.is_update_available = _semver_greater(latest_semver, current_semver)
+    if current_semver is not None and latest_semver is not None:
+        # Beides gültige Semver → normaler Vergleich
+        result.is_update_available = _semver_greater(latest_semver, current_semver)
+    elif latest_semver is None and current_semver is not None:
+        # Release hat keinen Semver-Tag (z.B. "ai"), aber lokale Version schon
+        # → nur als Update betrachten, wenn der Tag-Name anders ist
+        result.is_update_available = (latest_ver != current_version)
+    else:
+        # Beide kein Semver oder nur latest hat Semver → String-Vergleich
+        result.is_update_available = (latest_ver != current_version)
+
     return result
 
 

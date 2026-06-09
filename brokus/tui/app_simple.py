@@ -561,6 +561,41 @@ async def init():
         pass
 
 
+# ─────────────────────────────────────────────────────────────
+# Startup Update Check (non-blocking)
+# ─────────────────────────────────────────────────────────────
+
+async def _startup_update_check():
+    """Check for updates and show a short, non-blocking notification.
+
+    Only displays output when an update is actually available.
+    Errors are logged but not shown to the user (noise reduction).
+    """
+    from brokus.utils.updater import check_for_updates
+
+    try:
+        status = await asyncio.wait_for(check_for_updates(), timeout=5.0)
+    except asyncio.TimeoutError:
+        log.debug("Startup update check timed out")
+        return
+    except Exception as e:
+        log.debug(f"Startup update check failed: {e}")
+        return
+
+    if status.is_update_available:
+        console.print()
+        console.print(Panel(
+            f"[bold green]📦 Update verfügbar: v{status.latest_version}[/bold green]\n"
+            f"[dim]Aktuelle Version: v{status.current_version}[/dim]\n"
+            f"\n"
+            f"Gehe zu [bold]Einstellungen → Erweitert → 🔄 Update suchen[/bold]\n"
+            f"um das Update zu installieren.",
+            title="🔄 Update",
+            border_style="green",
+            padding=(0, 1),
+        ))
+        console.print()
+
 
 # ─────────────────────────────────────────────────────────────
 # Main Menu
@@ -568,10 +603,15 @@ async def init():
 
 async def main_menu():
     await init()
+    _show_update_notification = True
 
     while True:
         clear()
         banner()
+
+        if _show_update_notification:
+            _show_update_notification = False
+            await _startup_update_check()
 
         has_key = _has_api_key()
         key_status = "[green]✓[/green]" if has_key else "[red]✗[/red]"
@@ -1471,7 +1511,7 @@ async def _settings_advanced_menu():
         ])
         if choice == 0: _edit_advanced_params()
         elif choice == 1: _toggle_cache()
-        elif choice == 2: _run_update_check()
+        elif choice == 2: await _run_update_check()
         elif choice == 3: break
 
 
@@ -2072,16 +2112,15 @@ def _toggle_cache():
     pause()
 
 
-def _run_update_check():
+async def _run_update_check():
     """Check for updates and offer to install."""
-    import asyncio
     from brokus.utils.updater import check_for_updates, perform_update
 
     section(t("section.update"))
     console.print("  🔍 Suche nach Updates...")
 
     try:
-        status = asyncio.run(check_for_updates())
+        status = await check_for_updates()
     except Exception as e:
         console.print(f"  [red]❌ Update-Check fehlgeschlagen: {e}[/red]")
         pause()
@@ -2099,7 +2138,6 @@ def _run_update_check():
     if status.is_update_available:
         console.print(f"\n  [bold green]📦 Update verfügbar![/bold green]")
         if status.release_notes:
-            # Show first 10 lines of release notes
             notes_lines = status.release_notes.strip().split("\n")[:10]
             console.print(f"  [dim]Release-Notes:[/dim]")
             for line in notes_lines:
@@ -2112,7 +2150,7 @@ def _run_update_check():
             console.print()
             console.print("  ⏳ Update wird installiert (git pull + pip install)...")
             try:
-                success, msg = asyncio.run(perform_update(status))
+                success, msg = await perform_update(status)
                 if success:
                     console.print(f"  [bold green]✅ {msg}[/bold green]")
                     console.print("  [dim]Starte brokus neu, um die neue Version zu nutzen.[/dim]")
