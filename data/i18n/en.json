@@ -483,5 +483,9 @@
   "provider.zhipu.note": "Top Chinese model, multilingual",
   "provider.openai_compat.name": "🔧 Custom OpenAI Endpoint",
   "provider.openai_compat.note": "Any OpenAI-compatible endpoint (vLLM, TabbyAPI, LiteLLM Proxy, ...)",
-  "__test_marker__": "newly added"
+  "__test_marker__": "newly added",
+  "settings.master_passphrase": "🔐  Set / change master passphrase",
+  "label.cost": "Cost:",
+  "label.confirm_quit": "Confirm quit:",
+  "label.cache_size": "Cache limit:"
 }

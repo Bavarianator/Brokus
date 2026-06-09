@@ -14,7 +14,7 @@
   "main.quit": "🚪  Beenden",
   "main.goodbye": "Auf Wiedersehen! 👋",
   "common.cancel": "Abgebrochen.",
-  "common.invalid_number": "Bitte eine Zahl von {n} eingeben.",
+  "common.invalid_number": "Bitte eine Zahl von 1 bis {n} eingeben.",
   "common.press_enter": "Enter zum Fortfahren...",
   "common.hidden_input": "(Eingabe wird versteckt)",
   "common.default_hint": "(Standard: {default} – Enter für Standard)",
@@ -481,5 +481,9 @@
   "provider.zhipu.name": "Zhipu (GLM / z.ai)",
   "provider.zhipu.note": "Top chinesisches Modell, mehrsprachig",
   "provider.openai_compat.name": "🔧 Eigener OpenAI-Endpunkt",
-  "provider.openai_compat.note": "Beliebiger OpenAI-kompatibler Endpunkt (vLLM, TabbyAPI, LiteLLM-Proxy, ...)"
+  "provider.openai_compat.note": "Beliebiger OpenAI-kompatibler Endpunkt (vLLM, TabbyAPI, LiteLLM-Proxy, ...)",
+  "settings.master_passphrase": "🔐  Master-Passphrase setzen / ändern",
+  "label.cost": "Kosten:",
+  "label.confirm_quit": "Beenden:",
+  "label.cache_size": "Cache-Limit:"
 }

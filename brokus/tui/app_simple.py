@@ -435,26 +435,35 @@ def ask_password(prompt_text: str) -> str:
         return ""
 
 
-def choose(prompt_text: str, options: list[str]) -> int:
-    """Show numbered options, read choice via raw reader."""
+def choose(prompt_text: str, options: list[str | None]) -> int:
+    """Show numbered options, read choice via raw reader.
+
+    ``None`` values in ``options`` are rendered as visual separators
+    (dimmed horizontal lines) and are not selectable.
+    """
     if prompt_text:
         console.print(f"\n[bold]{prompt_text}[/bold]")
     console.print()
-    for i, opt in enumerate(options, 1):
-        console.print(f"  [cyan]{i}[/cyan]. {opt}")
+    valid_options: list[str] = []
+    for opt in options:
+        if opt is None:
+            console.print("  [dim]───────────────────[/dim]")
+        else:
+            valid_options.append(opt)
+            console.print(f"  [cyan]{len(valid_options)}[/cyan]. {opt}")
     console.print()
     while True:
         try:
-            raw = _read_line("  Deine Wahl (Nummer): ")
+            raw = _read_line(f"  {t('common.your_choice')}")
         except (KeyboardInterrupt, EOFError):
             console.print("\n[dim]Abgebrochen.[/dim]")
             return -1
         raw = raw.strip()
         if raw.isdigit():
             choice = int(raw)
-            if 1 <= choice <= len(options):
+            if 1 <= choice <= len(valid_options):
                 return choice - 1
-        console.print(f"  [red]Bitte eine Zahl von 1 bis {len(options)} eingeben.[/red]")
+        console.print(f"  [red]{t('common.invalid_number', n=len(valid_options))}[/red]")
 
 
 def confirm(prompt_text: str) -> bool:
@@ -1129,50 +1138,61 @@ async def settings_menu():
     while True:
         section(t("section.settings"))
 
-        # ── Kompakte Zusammenfassung (Top 6 wichtigste Werte) ──
+        # ── Hübsche Zusammenfassung als Tabelle ──
         has_key = _has_api_key()
-        key_status = "[green]✓[/green]" if has_key else "[red]✗[/red]"
+        key_status = f"[green]✓[/green]" if has_key else f"[red]✗[/red]"
         ek = ", ".join(settings.export_formats) or f"[dim]{t('status.empty')}[/dim]"
-        lang_label = language_name(get_language())
-        console.print(f"  {t('label.provider')} {settings.provider}  |  {t('label.model')} {settings.model}  |  Key: {key_status}  |  🌐 {lang_label}")
-        console.print(f"  {t('label.temp_short')} {settings.temperature}  |  {t('label.top_p')} {settings.top_p if settings.top_p is not None else '–'}  |  {t('label.tokens')} {settings.max_tokens}")
-        console.print(f"  {t('label.language')} {settings.default_language}  |  {t('label.chapters')} {settings.default_chapters}  |  {t('label.pace')} {settings.story_pace}")
-        console.print(f"  {t('label.detail_level')} {settings.detail_level}  |  {t('label.compliance')} {settings.compliance_threshold}%  |  {t('label.log_level')} {settings.log_level}")
-        console.print(f"  Export: {ek}  |  {t('label.cache')} {'✓' if settings.cache_responses else '✗'}  |  {t('label.backup')} {'✓' if settings.backup_enabled else '✗'}")
+        _settings_table([
+            (t("label.provider"),   f"[bold]{settings.provider}[/bold]"),
+            (t("label.model"),     f"[bold]{settings.model}[/bold]"),
+            (t("label.api_key"),   key_status),
+            (t("label.temp_short"), f"{settings.temperature}"),
+            (t("label.top_p"),    f"{settings.top_p if settings.top_p is not None else '–'}"),
+            (t("label.tokens"),    f"{settings.max_tokens}"),
+            (t("label.language"),  settings.default_language),
+            (t("label.chapters"),  f"{settings.default_chapters}"),
+            (t("label.pace"),      settings.story_pace),
+            (t("label.detail_level"), settings.detail_level),
+            (t("label.compliance"),  f"{settings.compliance_threshold}%"),
+            (t("label.log_level"),   settings.log_level),
+            (t("label.export_formats"), ek),
+            (t("label.cache"),       f"{'✓' if settings.cache_responses else '✗'}"),
+            (t("label.backup"),       f"{'✓' if settings.backup_enabled else '✗'}"),
+        ])
 
         choice = choose("", [
             t("settings.overview"),
-            "───────────────────",
+            None,
             t("settings.provider"),
             t("settings.ai"),
             t("settings.generation"),
             t("settings.ui"),
             t("settings.advanced"),
-            "───────────────────",
+            None,
             t("settings.open_yaml"),
             t("settings.reset"),
             t("settings.back"),
         ])
 
-        if choice in (1, 7):
-            continue  # Separator
-        if choice == 0:
+        if choice == -1:
+            break
+        elif choice == 0:
             _view_all_settings()
-        elif choice == 2:
+        elif choice == 1:
             await _settings_provider_menu()
-        elif choice == 3:
+        elif choice == 2:
             await _settings_ai_menu()
-        elif choice == 4:
+        elif choice == 3:
             await _settings_generation_menu()
-        elif choice == 5:
+        elif choice == 4:
             await _settings_ui_menu()
-        elif choice == 6:
+        elif choice == 5:
             await _settings_advanced_menu()
-        elif choice == 8:
+        elif choice == 6:
             _open_settings_yaml()
-        elif choice == 9:
+        elif choice == 7:
             _reset_settings_to_defaults()
-        elif choice == 10:
+        elif choice == 8:
             break
 
 
@@ -1184,22 +1204,46 @@ def _on_off(b: bool) -> str:
     return f"[green]{t('status.on')}[/green]" if b else f"[red]{t('status.off')}[/red]"
 
 
+def _settings_table(rows: list[tuple[str, str]], title: str | None = None):
+    """Print a compact two-column settings table.
+
+    Args:
+        rows: List of (label, value) pairs.
+        title: Optional panel title (e.g. "⚙️ Einstellungen").
+    """
+    table = Table(
+        show_header=False, show_lines=False, box=None,
+        padding=(0, 1), collapse_padding=True,
+    )
+    table.add_column("Label", style="dim cyan", justify="right", width=20)
+    table.add_column("Value", style="")
+    for label, value in rows:
+        table.add_row(label, value)
+    if title:
+        console.print(Panel(table, title=title, border_style="bright_blue", padding=(0, 1)))
+    else:
+        console.print(table)
+
+
 async def _settings_provider_menu():
     """Sub-Menu: Provider, Modell, API-Key, URL, Fallbacks, Discovery."""
     while True:
         section(t("settings.provider.title"))
         has_key = _has_api_key()
         key_status = f"[green]{t('status.set')}[/green]" if has_key else f"[red]{t('status.unset')}[/red]"
-        console.print(f"  {t('label.provider')}   {settings.provider}")
-        console.print(f"  {t('label.model')}     {settings.model}")
-        console.print(f"  {t('label.api_key')}    {key_status}")
+        rows = [
+            (t("label.provider"), settings.provider),
+            (t("label.model"), settings.model),
+            (t("label.api_key"), key_status),
+        ]
         if settings.custom_base_url:
-            console.print(f"  {t('label.custom_url')} {settings.custom_base_url}")
+            rows.append((t("label.custom_url"), settings.custom_base_url))
         if settings.fallback_models_str.strip():
             n = len([m for m in settings.fallback_models_str.split(",") if m.strip()])
-            console.print(f"  {t('label.fallbacks')}  {n} Modelle konfiguriert")
+            rows.append((t("label.fallbacks"), f"{n} {t('common.dash')} {t('status.set')}"))
         else:
-            console.print(f"  {t('label.fallbacks')}  [dim]{t('status.provider_default')}[/dim]")
+            rows.append((t("label.fallbacks"), f"[dim]{t('status.provider_default')}[/dim]"))
+        _settings_table(rows)
 
         choice = choose("", [
             t("settings.provider.change"),
@@ -1208,7 +1252,7 @@ async def _settings_provider_menu():
             t("settings.provider.custom_url"),
             t("settings.provider.fallback"),
             t("settings.provider.refresh"),
-            "🔐  Master-Passphrase setzen / ändern" + ("" if not _has_master_passphrase() else "  ✓"),
+            t("settings.master_passphrase") + ("" if not _has_master_passphrase() else "  ✓"),
             t("settings.back_to_settings"),
         ])
         if choice == 0: _pick_provider()
@@ -1229,13 +1273,15 @@ async def _settings_ai_menu():
         top_p_v = settings.top_p if settings.top_p is not None else off
         freq_v = settings.frequency_penalty if settings.frequency_penalty is not None else off
         pres_v = settings.presence_penalty if settings.presence_penalty is not None else off
-        console.print(f"  {t('label.temperature')}    {settings.temperature}")
-        console.print(f"  {t('label.max_tokens')}     {settings.max_tokens}")
-        console.print(f"  {t('label.top_p')}          {top_p_v}")
-        console.print(f"  {t('label.freq_pen')}  {freq_v}")
-        console.print(f"  {t('label.pres_pen')}   {pres_v}")
-        console.print(f"  {t('label.compliance')}     {settings.compliance_threshold}%")
-        console.print(f"  {t('label.retries')}    {settings.max_retries}")
+        _settings_table([
+            (t("label.temperature"),  f"{settings.temperature}"),
+            (t("label.max_tokens"),   f"{settings.max_tokens}"),
+            (t("label.top_p"),        f"{top_p_v}"),
+            (t("label.freq_pen"),     f"{freq_v}"),
+            (t("label.pres_pen"),     f"{pres_v}"),
+            (t("label.compliance"),   f"{settings.compliance_threshold}%"),
+            (t("label.retries"),      f"{settings.max_retries}"),
+        ])
 
         choice = choose("", [
             t("settings.ai.edit"),
@@ -1255,17 +1301,19 @@ async def _settings_generation_menu():
         section(t("settings.generation.title"))
         none_v = f"[dim]{t('status.none')}[/dim]"
         export_v = ", ".join(settings.export_formats) or none_v
-        console.print(f"  {t('label.language')}      {settings.default_language}")
-        console.print(f"  {t('label.chapters')}      {settings.default_chapters}")
-        console.print(f"  {t('label.pace')}        {settings.story_pace}")
-        console.print(f"  {t('label.detail_level')}   {settings.detail_level}")
-        console.print(f"  {t('label.delay')} {_on_off(settings.chapter_delay_enabled)}")
-        console.print(f"  {t('label.thinking')} {_on_off(settings.use_extended_thinking)}")
-        console.print(f"  {t('label.backup')}       {_on_off(settings.backup_enabled)}")
-        console.print(f"  {t('label.auto_export')}  {_on_off(settings.auto_export)}")
-        console.print(f"  {t('label.auto_open')}    {_on_off(settings.auto_open_after_export)}")
-        console.print(f"  {t('label.export_formats')} {export_v}")
-        console.print(f"  {t('label.wizard_picker')} {_on_off(settings.wizard_model_picker)}")
+        _settings_table([
+            (t("label.language"),       settings.default_language),
+            (t("label.chapters"),       f"{settings.default_chapters}"),
+            (t("label.pace"),          settings.story_pace),
+            (t("label.detail_level"),   settings.detail_level),
+            (t("label.delay"),          _on_off(settings.chapter_delay_enabled)),
+            (t("label.thinking"),       _on_off(settings.use_extended_thinking)),
+            (t("label.backup"),          _on_off(settings.backup_enabled)),
+            (t("label.auto_export"),    _on_off(settings.auto_export)),
+            (t("label.auto_open"),      _on_off(settings.auto_open_after_export)),
+            (t("label.export_formats"), export_v),
+            (t("label.wizard_picker"),  _on_off(settings.wizard_model_picker)),
+        ])
 
         choice = choose("", [
             t("settings.generation.edit"),
@@ -1293,11 +1341,13 @@ async def _settings_ui_menu():
     """Sub-Menu: Log-Level, Token/Kosten-Anzeige, Beenden-Bestätigung, Sprache."""
     while True:
         section(t("settings.ui.title"))
-        console.print(f"  {t('label.log_level')}       {settings.log_level}")
-        console.print(f"  {t('label.tokens')}   {_on_off(settings.show_token_count)}")
-        console.print(f"  {t('label.cache')}  {_on_off(settings.show_cost_estimate)}")
-        console.print(f"  Beenden-Bestätigung {_on_off(settings.confirm_quit)}")
-        console.print(f"  🌐 Sprache:           {language_name(get_language())}")
+        _settings_table([
+            (t("label.log_level"),    settings.log_level),
+            (t("label.tokens"),       _on_off(settings.show_token_count)),
+            (t("label.cost"),         _on_off(settings.show_cost_estimate)),
+            (t("label.confirm_quit"), _on_off(settings.confirm_quit)),
+            (t("label.language"),     f"🌐 {language_name(get_language())}"),
+        ])
 
         choice = choose("", [
             t("settings.ui.edit"),
@@ -1319,9 +1369,11 @@ async def _settings_advanced_menu():
     """Sub-Menu: Timeout, Cache, Cache-Größe."""
     while True:
         section(t("settings.advanced.title"))
-        console.print(f"  {t('label.timeout')}  {settings.request_timeout}s")
-        console.print(f"  {t('label.cache')}         {_on_off(settings.cache_responses)}")
-        console.print(f"  Max. Cache-Größe: {settings.max_cache_size_mb} MB")
+        _settings_table([
+            (t("label.timeout"),    f"{settings.request_timeout}s"),
+            (t("label.cache"),       _on_off(settings.cache_responses)),
+            (t("label.cache_size"),  f"{settings.max_cache_size_mb} MB"),
+        ])
 
         choice = choose("", [
             t("settings.advanced.edit"),
