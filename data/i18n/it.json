@@ -484,5 +484,9 @@
   "provider.zhipu.name": "Zhipu (GLM / z.ai)",
   "provider.zhipu.note": "Miglior modello cinese, multilingue",
   "provider.openai_compat.name": "🔧 Endpoint OpenAI personalizzato",
-  "provider.openai_compat.note": "Qualsiasi endpoint compatibile OpenAI (vLLM, TabbyAPI, LiteLLM Proxy, ...)"
+  "provider.openai_compat.note": "Qualsiasi endpoint compatibile OpenAI (vLLM, TabbyAPI, LiteLLM Proxy, ...)",
+  "settings.master_passphrase": "🔐  Imposta / cambia passphrase master",
+  "label.cost": "Costi:",
+  "label.confirm_quit": "Conferma esci:",
+  "label.cache_size": "Limite cache:"
 }

@@ -484,5 +484,9 @@
   "provider.zhipu.name": "Zhipu (GLM / z.ai)",
   "provider.zhipu.note": "Top Chinees model, meertalig",
   "provider.openai_compat.name": "🔧 Aangepaste OpenAI-endpoint",
-  "provider.openai_compat.note": "Elke OpenAI-compatibele endpoint (vLLM, TabbyAPI, LiteLLM Proxy, ...)"
+  "provider.openai_compat.note": "Elke OpenAI-compatibele endpoint (vLLM, TabbyAPI, LiteLLM Proxy, ...)",
+  "settings.master_passphrase": "🔐  Master-passphrase instellen / wijzigen",
+  "label.cost": "Kosten:",
+  "label.confirm_quit": "Bevestig afsluiten:",
+  "label.cache_size": "Cache-limiet:"
 }
