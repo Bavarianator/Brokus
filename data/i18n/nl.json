@@ -505,5 +505,6 @@
   "wizard.ready_hint": "Druk op Enter om te starten...",
   "wizard.re_run": "🔁  Setup-wizard opnieuw uitvoeren",
   "wizard.start": "🚀  Setup starten?",
-  "wizard.set_passphrase": "🔐  Master-passphrase instellen?"
+  "wizard.set_passphrase": "🔐  Master-passphrase instellen?",
+  "help.nav_enter": "Lege invoer (Enter) betekent vaak \"Annuleren\" of \"Terug\"."
 }
