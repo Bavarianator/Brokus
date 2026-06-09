@@ -385,6 +385,18 @@ def clear():
     os.system("cls" if os.name == "nt" else "clear")
 
 
+def _easter_egg_42():
+    """Show a small Hitchhiker's Guide Easter Egg when the user enters '42' as a book idea."""
+    console.print()
+    console.print(Panel(
+        t("easter_egg.42.body"),
+        title=t("easter_egg.42.title"),
+        border_style="bright_yellow",
+    ))
+    console.print()
+    pause()
+
+
 def banner():
     """Print the BROKUS block-letter ASCII banner."""
     console.print()
@@ -596,6 +608,9 @@ async def wizard_quick():
     idea = ask_text("Beschreibe deine Buchidee (je mehr Details, desto besser):")
     if not idea:
         return
+    if idea.strip() == "42":
+        _easter_egg_42()
+        # Continue normally after the egg – the user can still generate a book about 42
 
     title = ask_text("Wie soll das Buch heißen?", default=idea[:40])
 
