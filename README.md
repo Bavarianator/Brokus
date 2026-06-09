@@ -58,7 +58,7 @@ Full UI translation: **English**, **Deutsch**, **Français**, **Español**, **Ne
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-user/brokus.git
+git clone https://github.com/Bavarianator/Brokus.git
 cd brokus
 
 # Install dependencies
