@@ -1,31 +1,93 @@
 #!/usr/bin/env bash
-# brokus – KI-Buchgenerator im Terminal
-# Is designed to work from any directory: symlink to ~/.local/bin/brokus
+# ─────────────────────────────────────────────────────────────
+#  brokus – KI-Buchgenerator im Terminal
+#
+#  Auto-Setup bei erstem Aufruf:
+#  1. Python-Dependencies installieren (PEP 668-sicher)
+#  2. Symlink ~/.local/bin/brokus → bin/brokus erstellen
+#  3. ~/.local/bin zum PATH hinzufügen (bashrc/zshrc)
+#  4. App starten
+#
+#  Nach dem ersten Aufruf ist `brokus` global verfügbar.
+# ─────────────────────────────────────────────────────────────
 
 set -e
 
-# Resolve symlinks first, then find the project directory
+# ── Projektverzeichnis finden (funktioniert auch via Symlink) ──
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 PYTHON="${BROKUS_PYTHON:-python3}"
+TARGET_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
+TARGET_LINK="$TARGET_DIR/brokus"
 
-# ── Auto-Install: falls Dependencies fehlen, biete Installation an ──
+cd "$SCRIPT_DIR"
+
+# ═════════════════════════════════════════════════════════════
+#  1. Dependencies prüfen / installieren
+# ═════════════════════════════════════════════════════════════
+
 if ! "$PYTHON" -c "import rich" 2>/dev/null; then
-    echo "📦 brokus: Python-Dependencies fehlen." >&2
-    
-    if [[ -f "$SCRIPT_DIR/install.sh" && -t 0 ]]; then
-        echo "  Starte Installations-Assistenten..." >&2
-        echo >&2
-        exec bash "$SCRIPT_DIR/install.sh"
+    echo "📦 brokus: Installiere Python-Dependencies..." >&2
+
+    if PIP_OUTPUT=$("$PYTHON" -m pip install -e . 2>&1); then
+        echo "  ✓ Dependencies installiert" >&2
+    elif echo "$PIP_OUTPUT" | grep -qi "externally-managed"; then
+        echo "  ⚠ PEP 668 (Arch/Manjaro) – versuche mit --break-system-packages..." >&2
+        if PIP_OUTPUT2=$("$PYTHON" -m pip install --break-system-packages -e . 2>&1); then
+            echo "  ✓ Dependencies installiert" >&2
+        else
+            echo "  ✗ pip-install fehlgeschlagen:" >&2
+            echo "$PIP_OUTPUT2" | head -3 >&2
+            echo "  Manuell: cd $SCRIPT_DIR && pip install --break-system-packages -e ." >&2
+            exit 1
+        fi
+    else
+        echo "  ✗ pip-install fehlgeschlagen:" >&2
+        echo "$PIP_OUTPUT" | head -3 >&2
+        echo "  Manuell: cd $SCRIPT_DIR && pip install -e ." >&2
+        exit 1
     fi
-    
-    echo >&2
-    echo "  Dependencies installieren mit:" >&2
-    echo "    cd \"$SCRIPT_DIR\" && pip install -e ." >&2
-    echo "    cd \"$SCRIPT_DIR\" && pip install --break-system-packages -e ." >&2
-    echo >&2
-    exit 1
 fi
 
-# ── Start ──
-cd "$SCRIPT_DIR"
+# ═════════════════════════════════════════════════════════════
+#  2. Symlink erstellen (falls nicht vorhanden)
+# ═════════════════════════════════════════════════════════════
+
+if [[ ! -L "$TARGET_LINK" && ! -f "$TARGET_LINK" ]]; then
+    echo "  🔗 Erstelle Symlink: $TARGET_LINK → bin/brokus" >&2
+    mkdir -p "$TARGET_DIR"
+    ln -s "$SCRIPT_DIR/bin/brokus" "$TARGET_LINK"
+fi
+
+# ═════════════════════════════════════════════════════════════
+#  3. PATH prüfen & Shell-Config aktualisieren (einmalig)
+# ═════════════════════════════════════════════════════════════
+
+if ! echo "$PATH" | tr ':' '\n' | grep -qx "$TARGET_DIR" 2>/dev/null; then
+    SHELL_NAME="$(basename "${SHELL:-/bin/bash}")"
+    case "$SHELL_NAME" in
+        zsh)  RC="$HOME/.zshrc" ;;
+        bash) RC="$HOME/.bashrc" ;;
+        *)    for f in "$HOME/.profile" "$HOME/.bash_profile" "$HOME/.bashrc" "$HOME/.zshrc"; do
+                  [[ -f "$f" ]] && { RC="$f"; break; }
+              done
+              [[ -z "$RC" ]] && RC="$HOME/.profile" ;;
+    esac
+
+    if ! grep -q "\.local/bin" "$RC" 2>/dev/null; then
+        echo "  🔧 Füge ~/.local/bin zum PATH in $RC hinzu" >&2
+        {
+            echo ""
+            echo "# brokus: lokale Binaries zum PATH hinzufügen"
+            echo 'export PATH="$HOME/.local/bin:$PATH"'
+        } >> "$RC"
+    fi
+
+    # PATH für diese Session setzen
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# ═════════════════════════════════════════════════════════════
+#  4. App starten
+# ═════════════════════════════════════════════════════════════
+
 exec "$PYTHON" -m brokus "$@"
