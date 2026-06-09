@@ -386,9 +386,21 @@ def clear():
 
 
 def banner():
-    """Print plain ASCII banner."""
+    """Print the BROKUS block-letter ASCII banner."""
     console.print()
-    console.print("[bold bright_blue]BROKUS[/bold bright_blue]  [dim]KI-gestützter Buch-Generator[/dim]")
+    console.print(
+        "[bold bright_blue]"
+        + "\n".join(
+            [
+                "██████  ██████   ██████  ██   ██ ██    ██ ███████ ",
+                "██   ██ ██   ██ ██    ██ ██  ██  ██    ██ ██      ",
+                "██████  ██████  ██    ██ █████   ██    ██ ███████ ",
+                "██   ██ ██   ██ ██    ██ ██  ██  ██    ██      ██ ",
+                "██████  ██   ██  ██████  ██   ██  ██████  ███████ ",
+            ]
+        )
+        + "[/bold bright_blue]"
+    )
     console.print()
 
 
@@ -1085,8 +1097,15 @@ def _get_current_models() -> list[str]:
 def _get_providers() -> list[dict]:
     try:
         from brokus.ai.client import PROVIDER_REGISTRY
+        from brokus.utils.i18n import t_label
         return [
-            {"key": k, "name": p.name, "models": p.models, "cost": p.cost_info, "env": p.api_key_env}
+            {
+                "key": k,
+                "name": t_label("provider", f"{k}.name", default=p.name),
+                "models": p.models,
+                "cost": p.cost_info,
+                "env": p.api_key_env,
+            }
             for k, p in PROVIDER_REGISTRY.items()
         ]
     except Exception:

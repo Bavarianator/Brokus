@@ -9,18 +9,19 @@ from textual.widgets import (
 from textual.binding import Binding
 
 from brokus.tui.widgets.chapter_tree import ChapterTree
+from brokus.utils.i18n import t
 
 
 class EditorScreen(Screen):
     """Chapter editor with navigation tree and text area."""
 
     BINDINGS = [
-        Binding("r", "regenerate", "Regenerieren"),
-        Binding("e", "edit_mode", "Editieren"),
-        Binding("f", "continue_gen", "Fortsetzen"),
-        Binding("right", "next_chapter", "Nächstes Kap."),
-        Binding("left", "prev_chapter", "Vorheriges Kap."),
-        Binding("escape", "go_back", "Zurück"),
+        Binding("r", "regenerate", t("tui.editor.binding_regenerate")),
+        Binding("e", "edit_mode", t("tui.editor.binding_edit")),
+        Binding("f", "continue_gen", t("tui.editor.binding_continue")),
+        Binding("right", "next_chapter", t("tui.editor.binding_next")),
+        Binding("left", "prev_chapter", t("tui.editor.binding_prev")),
+        Binding("escape", "go_back", t("tui.editor.binding_back")),
     ]
 
     def __init__(self):
@@ -35,15 +36,15 @@ class EditorScreen(Screen):
             with Horizontal(id="editor-main"):
                 yield ChapterTree(id="chapter-tree")
                 with Container(id="editor-content"):
-                    yield Static("Kapitel: ", id="editor-title", classes="section-title")
+                    yield Static(t("section.generation"), id="editor-title", classes="section-title")
                     yield TextArea(id="chapter-text", read_only=True)
-                    yield Static("Wörter: 0 | Lesezeit: ~0 Min | Compliance: -", id="editor-info")
+                    yield Static(t("tui.editor.info_words", n=0, mins=0, c="-"), id="editor-info")
             with Horizontal(id="editor-actions"):
-                yield Button("🔄 Regenerieren", id="btn-regenerate")
-                yield Button("✏️ Editieren", id="btn-edit")
-                yield Button("▶ Fortsetzen", id="btn-continue")
-                yield Button("→ Nächstes", id="btn-next")
-                yield Button("📤 Export", id="btn-export", variant="primary")
+                yield Button(t("tui.editor.btn_regenerate"), id="btn-regenerate")
+                yield Button(t("tui.editor.btn_edit"), id="btn-edit")
+                yield Button(t("tui.editor.btn_continue"), id="btn-continue")
+                yield Button(t("tui.editor.btn_next"), id="btn-next")
+                yield Button(t("tui.editor.btn_export"), id="btn-export", variant="primary")
         yield Footer()
 
     async def on_mount(self):
@@ -61,9 +62,13 @@ class EditorScreen(Screen):
                 self._current_chapter = 0
                 self._load_chapter()
             else:
-                self.query_one("#editor-title", Static).update("Keine Kapitel gefunden")
+                self.query_one("#editor-title", Static).update(
+                    t("tui.editor.no_chapters")
+                )
         except Exception as e:
-            self.query_one("#editor-title", Static).update(f"Fehler: {e}")
+            self.query_one("#editor-title", Static).update(
+                t("tui.editor.error_load", error=e)
+            )
 
     def _load_chapter(self):
         """Load the current chapter into the editor."""
@@ -72,14 +77,14 @@ class EditorScreen(Screen):
 
         ch = self._chapters[self._current_chapter]
         self.query_one("#editor-title", Static).update(
-            f'Kapitel {ch["number"]}: "{ch["title"]}"'
+            t("tui.editor.title_prefix", n=ch["number"], title=ch["title"])
         )
         self.query_one("#chapter-text", TextArea).load_text(ch.get("text", ""))
         words = ch.get("word_count", 0)
         compliance = ch.get("compliance_score", "-")
         mins = max(1, words // 250)
         self.query_one("#editor-info", Static).update(
-            f"Wörter: {words:,} | Lesezeit: ~{mins} Min | Compliance: {compliance}"
+            t("tui.editor.info_words", n=words, mins=mins, c=compliance)
         )
 
         # Update chapter tree
@@ -112,17 +117,21 @@ class EditorScreen(Screen):
                 break
 
     def action_regenerate(self):
-        self.notify("Regenerierung startet...")
+        self.notify(t("tui.editor.regenerating"))
         # TODO: implement chapter regeneration
 
     def action_edit_mode(self):
         text_area = self.query_one("#chapter-text", TextArea)
         text_area.read_only = not text_area.read_only
-        status = "aktiviert" if not text_area.read_only else "deaktiviert"
-        self.notify(f"Editieren {status}")
+        status = (
+            t("tui.editor.edit_activated")
+            if not text_area.read_only
+            else t("tui.editor.edit_deactivated")
+        )
+        self.notify(status)
 
     def action_continue_gen(self):
-        self.notify("Fortsetzung startet...")
+        self.notify(t("tui.editor.continuing"))
         # TODO: implement continuation
 
     def action_next_chapter(self):

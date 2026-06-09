@@ -1,0 +1,1 @@
+2026-06-09 13:30:05,061 [ERROR] Failed to save secrets: cannot access local variable 'nonce' where it is not associated with a value

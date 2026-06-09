@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from brokus.utils.logger import log
+from brokus.utils.i18n import t_label
 
 # Default config directory: <project_root>/config
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
@@ -76,14 +77,19 @@ class GenreLoader:
         return self._genres.get(genre_key)
 
     def get_style_hint(self, genre_key: str) -> str:
-        """Get the style hint for a genre."""
+        """Get the style hint for a genre (falls back to YAML value)."""
         genre = self.get_genre(genre_key)
-        return genre.get("style_hint", "") if genre else ""
+        if not genre:
+            return ""
+        # The style_hint is a technical instruction; only override if i18n has one.
+        translated = t_label("genre", f"{genre_key}.style_hint", default="")
+        return translated or genre.get("style_hint", "")
 
     def get_name(self, genre_key: str) -> str:
-        """Get the display name for a genre."""
+        """Get the display name for a genre (i18n-aware)."""
         genre = self.get_genre(genre_key)
-        return genre.get("name", genre_key) if genre else genre_key
+        fallback = genre.get("name", genre_key) if genre else genre_key
+        return t_label("genre", f"{genre_key}.name", default=fallback)
 
     @property
     def genre_keys(self) -> list[str]:

@@ -8,17 +8,18 @@ from textual.binding import Binding
 
 from brokus.tui.widgets.progress import GenerationProgress, PipelineStatus, ComplianceDashboard
 from brokus.tui.widgets.log_viewer import LiveLogViewer
+from brokus.utils.i18n import t
 
 
 class GenerationScreen(Screen):
     """Live generation view with compliance dashboard and book opener."""
 
     BINDINGS = [
-        Binding("p", "toggle_pause", "Pause/Resume"),
-        Binding("s", "stop_generation", "Stop"),
-        Binding("o", "open_book", "Buch oeffnen"),
-        Binding("f2", "show_compliance", "Compliance-Details"),
-        Binding("escape", "go_back", "Zurueck"),
+        Binding("p", "toggle_pause", t("tui.generation.binding_pause")),
+        Binding("s", "stop_generation", t("tui.generation.binding_stop")),
+        Binding("o", "open_book", t("tui.generation.binding_open")),
+        Binding("f2", "show_compliance", t("tui.generation.binding_compliance")),
+        Binding("escape", "go_back", t("tui.generation.binding_back")),
     ]
 
     def __init__(self):
@@ -32,18 +33,18 @@ class GenerationScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Container(id="generation-container"):
-            yield Static("Generierung: ...", id="gen-title", classes="section-title")
+            yield Static(t("section.generation"), id="gen-title", classes="section-title")
             yield GenerationProgress(id="gen-progress")
             yield PipelineStatus(id="pipeline-status")
             with Container(id="gen-compliance-dash"):
                 yield ComplianceDashboard(id="compliance-dashboard")
             yield LiveLogViewer(id="live-log-viewer")
             with Horizontal(id="gen-actions"):
-                yield Button("\u23ef Pause", id="btn-pause", variant="primary")
-                yield Button("\u23f9 Stop", id="btn-stop", variant="error")
-                yield Button("\U0001f4c2 Ordner", id="btn-open-folder")
-                yield Button("\U0001f4d6 Buch \u00f6ffnen", id="btn-open-book")
-                yield Button("\U0001f4cb Log", id="btn-export-log")
+                yield Button(t("tui.generation.btn_pause"), id="btn-pause", variant="primary")
+                yield Button(t("tui.generation.btn_stop"), id="btn-stop", variant="error")
+                yield Button(t("tui.generation.btn_folder"), id="btn-open-folder")
+                yield Button(t("tui.generation.btn_open_book"), id="btn-open-book")
+                yield Button(t("tui.generation.btn_log"), id="btn-export-log")
         yield Footer()
 
     async def on_mount(self):
@@ -54,12 +55,14 @@ class GenerationScreen(Screen):
         """Begin the book generation pipeline."""
         params = getattr(self.app, "generation_params", None)
         if not params:
-            self.notify("Keine Generierungsparameter gefunden.", severity="error")
+            self.notify(t("tui.generation.no_params"), severity="error")
             self.app.navigate_to("library")
             return
 
-        title = params.get("title", "Unbenannt")
-        self.query_one("#gen-title", Static).update(f'Generierung: "{title}"')
+        title = params.get("title", t("tui.library.untitled"))
+        self.query_one("#gen-title", Static).update(
+            t("tui.generation.title_prefix", title=title)
+        )
 
         self._generation_active = True
         self._paused = False
@@ -76,8 +79,8 @@ class GenerationScreen(Screen):
                 model=params.get("model", "claude-sonnet-4-5"),
             )
         except Exception as e:
-            self._add_log("ERROR", f"Datenbankfehler: {e}")
-            self.notify(f"Fehler: {e}", severity="error")
+            self._add_log("ERROR", t("tui.generation.db_error", error=e))
+            self.notify(t("common.error_prefix", default="") + str(e), severity="error")
             return
 
         from brokus.ai.client import BrokusAIClient
@@ -126,7 +129,7 @@ class GenerationScreen(Screen):
             )
 
         try:
-            self._add_log("INFO", f"Starte: '{title}' ({params.get('num_chapters', 20)} Kap.)")
+            self._add_log("INFO", t("tui.generation.starting", title=title, n=params.get('num_chapters', 20)))
             result = await pipeline.run(
                 book_idea=params.get("idea", ""),
                 genre_key=params.get("genre", "fantasy"),
@@ -139,14 +142,14 @@ class GenerationScreen(Screen):
                 synopsis=result.get("synopsis", ""),
             )
             self._generation_active = False
-            self._add_log("INFO", f"Fertig: {result.get('total_chapters', 0)} Kap., {result.get('total_words', 0):,} Worte")
-            self.notify("Buch fertiggestellt! \U0001f389", title="Erfolg")
+            self._add_log("INFO", t("tui.generation.finished", n=result.get('total_chapters', 0), w=result.get('total_words', 0)))
+            self.notify(t("tui.generation.done_title"), title=t("tui.generation.success"))
             await self._export_for_opening(project_id)
         except Exception as e:
-            self._add_log("ERROR", f"Fehler: {e}")
+            self._add_log("ERROR", f"{t('common.error_prefix', default='Fehler: ')}{e}")
             await update_project(project_id, status="failed")
             self._generation_active = False
-            self.notify(f"Fehler: {e}", severity="error")
+            self.notify(f"{t('common.error_prefix', default='Fehler: ')}{e}", severity="error")
 
     def _update_compliance(self, score, status_lines, tracker_text):
         """Update compliance dashboard."""
@@ -165,12 +168,11 @@ class GenerationScreen(Screen):
             from brokus.storage.exporter import Exporter
             project = await get_project(project_id)
             chapters = await get_all_chapters(project_id)
-            if project and chapters:
-                exporter = Exporter()
-                self._book_path = str(exporter.export(project, chapters, fmt="md"))
-                self._add_log("INFO", f"Exportiert: {self._book_path}")
+            if project and chapters:            exporter = Exporter()
+            self._book_path = str(exporter.export(project, chapters, fmt="md"))
+            self._add_log("INFO", t("tui.generation.export_done", path=self._book_path))
         except Exception as e:
-            self._add_log("WARNING", f"Export: {e}")
+            self._add_log("WARNING", t("tui.generation.export_warning", error=e))
 
     def _update_progress(self, stage, progress, message):
         """Update progress bars and pipeline status."""
@@ -219,44 +221,50 @@ class GenerationScreen(Screen):
         if not self._generation_active:
             return
         self._paused = not self._paused
-        label = "\u25b6 Resume" if self._paused else "\u23ef Pause"
+        label = (
+            t("tui.generation.btn_open_book") if self._paused
+            else t("tui.generation.btn_pause")
+        )
         self.query_one("#btn-pause", Button).label = label
-        status = "pausiert" if self._paused else "fortgesetzt"
-        self._add_log("INFO", f"Generierung {status}")
-        self.notify(f"Generierung {status}.")
+        status = (
+            t("tui.generation.notify_pause") if self._paused
+            else t("tui.generation.notify_resume")
+        )
+        self._add_log("INFO", status)
+        self.notify(status)
 
     def action_stop_generation(self):
         if self._pipeline:
             self._pipeline.stop()
         self._generation_active = False
-        self._add_log("WARNING", "Generierung gestoppt.")
-        self.notify("Generierung gestoppt.", severity="warning")
+        self._add_log("WARNING", t("tui.generation.stopped"))
+        self.notify(t("tui.generation.notify_stop"), severity="warning")
 
     def action_open_book(self):
         if self._book_path:
             try:
                 from brokus.utils.opener import BookOpener
                 BookOpener.open_file(self._book_path)
-                self.notify(f"Buch geoffnet", title="Info")
+                self.notify(t("tui.generation.book_opened"), title=t("tui.generation.book_open_info"))
             except Exception as e:
-                self.notify(f"Fehler: {e}", severity="error")
+                self.notify(f"{t('common.error_prefix', default='Fehler: ')}{e}", severity="error")
         else:
-            self.notify("Noch kein Export verfugbar.", severity="warning")
+            self.notify(t("tui.generation.no_export"), severity="warning")
 
     def action_open_book_folder(self):
         path = self._book_path or "data/books"
         try:
             from brokus.utils.opener import BookOpener
             BookOpener.open_folder(path)
-            self.notify(f"Ordner geoffnet", title="Info")
+            self.notify(t("tui.generation.folder_opened"), title=t("tui.generation.book_open_info"))
         except Exception as e:
-            self.notify(f"Fehler: {e}", severity="error")
+            self.notify(f"{t('common.error_prefix', default='Fehler: ')}{e}", severity="error")
 
     def action_export_log(self):
-        self.notify("Log-Export noch nicht implementiert.")
+        self.notify(t("tui.generation.log_export_todo"))
 
     def action_go_back(self):
         if self._generation_active:
-            self.notify("Generierung lauft. Drucke [S] zum Stoppen.", severity="warning")
+            self.notify(t("tui.generation.running_hint"), severity="warning")
         else:
             self.app.navigate_to("library")
