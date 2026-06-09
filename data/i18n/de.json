@@ -528,5 +528,7 @@
   "help.navigation": "Navigation",
   "help.nav_numbers": "Immer eine Zahl eingeben und Enter drücken, um eine Option zu wählen.",
   "help.nav_enter": "Leere Eingabe (Enter) bedeutet oft „Abbrechen“ oder „Zurück“.",
-  "help.nav_ctrl_c": "Ctrl+C bricht jede Eingabe sofort ab."
+  "help.nav_ctrl_c": "Ctrl+C bricht jede Eingabe sofort ab.",
+  "easter_egg.42.title": "🥚  Easter Egg",
+  "easter_egg.42.body": "\"42\" – Die ultimative Antwort auf die Frage nach dem Leben, dem Universum und dem Ganzen Rest.\n\n– Deep Thought, nach 7,5 Millionen Jahren Berechnung\n\n🐬  Keine Sorge – brokus hilft dir, ein Buch zu schreiben, das die Antwort erklärt."
 }

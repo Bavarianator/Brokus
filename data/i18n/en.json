@@ -530,5 +530,7 @@
   "help.navigation": "Navigation",
   "help.nav_numbers": "Always type a number and press Enter to choose an option.",
   "help.nav_enter": "Empty input (Enter) often means „Cancel“ or „Back“.",
-  "help.nav_ctrl_c": "Ctrl+C immediately aborts any input."
+  "help.nav_ctrl_c": "Ctrl+C immediately aborts any input.",
+  "easter_egg.42.title": "🥚  Easter Egg",
+  "easter_egg.42.body": "\"42\" – The ultimate answer to the question of life, the universe and everything.\n\n– Deep Thought, after 7.5 million years of computation\n\n🐬  Don't worry – brokus will help you write a book explaining the answer."
 }
