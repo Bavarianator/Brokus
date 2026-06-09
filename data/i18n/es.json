@@ -488,5 +488,22 @@
   "settings.master_passphrase": "🔐  Establecer / cambiar frase maestra",
   "label.cost": "Coste:",
   "label.confirm_quit": "Confirmar salir:",
-  "label.cache_size": "Límite caché:"
+  "label.cache_size": "Límite caché:",
+  "wizard.welcome": "¡Bienvenido a brokus!",
+  "wizard.tagline": "Configuremos todo en 2 minutos.",
+  "wizard.step": "Paso {step}/{total}: {title}",
+  "wizard.step_language": "Elegir idioma",
+  "wizard.step_provider": "Elegir proveedor de IA",
+  "wizard.step_model": "Elegir modelo",
+  "wizard.step_api_key": "Introducir clave API",
+  "wizard.step_passphrase": "Frase maestra (opcional)",
+  "wizard.step_ready": "¡Listo!",
+  "wizard.hint_api_key": "Tu clave se guardará cifrada.",
+  "wizard.hint_passphrase": "Protección adicional para tus claves API.",
+  "wizard.skip": "⏭  Saltar configuración",
+  "wizard.done": "✓ ¡Configuración completada!",
+  "wizard.ready_hint": "Pulsa Enter para empezar...",
+  "wizard.re_run": "🔁  Volver a ejecutar el asistente",
+  "wizard.start": "🚀  ¿Iniciar configuración?",
+  "wizard.set_passphrase": "🔐  ¿Establecer frase maestra?"
 }

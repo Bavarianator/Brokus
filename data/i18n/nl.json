@@ -488,5 +488,22 @@
   "settings.master_passphrase": "🔐  Master-passphrase instellen / wijzigen",
   "label.cost": "Kosten:",
   "label.confirm_quit": "Bevestig afsluiten:",
-  "label.cache_size": "Cache-limiet:"
+  "label.cache_size": "Cache-limiet:",
+  "wizard.welcome": "Welkom bij brokus!",
+  "wizard.tagline": "Laten we alles in 2 minuten instellen.",
+  "wizard.step": "Stap {step}/{total}: {title}",
+  "wizard.step_language": "Kies taal",
+  "wizard.step_provider": "Kies AI-provider",
+  "wizard.step_model": "Kies model",
+  "wizard.step_api_key": "API-sleutel invoeren",
+  "wizard.step_passphrase": "Master-passphrase (optioneel)",
+  "wizard.step_ready": "Klaar!",
+  "wizard.hint_api_key": "Je sleutel wordt versleuteld opgeslagen.",
+  "wizard.hint_passphrase": "Extra bescherming voor je API-sleutels.",
+  "wizard.skip": "⏭  Setup overslaan",
+  "wizard.done": "✓ Setup voltooid!",
+  "wizard.ready_hint": "Druk op Enter om te starten...",
+  "wizard.re_run": "🔁  Setup-wizard opnieuw uitvoeren",
+  "wizard.start": "🚀  Setup starten?",
+  "wizard.set_passphrase": "🔐  Master-passphrase instellen?"
 }

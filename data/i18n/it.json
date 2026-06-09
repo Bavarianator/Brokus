@@ -488,5 +488,22 @@
   "settings.master_passphrase": "🔐  Imposta / cambia passphrase master",
   "label.cost": "Costi:",
   "label.confirm_quit": "Conferma esci:",
-  "label.cache_size": "Limite cache:"
+  "label.cache_size": "Limite cache:",
+  "wizard.welcome": "Benvenuto in brokus!",
+  "wizard.tagline": "Configuriamo tutto in 2 minuti.",
+  "wizard.step": "Passo {step}/{total}: {title}",
+  "wizard.step_language": "Scegli lingua",
+  "wizard.step_provider": "Scegli provider IA",
+  "wizard.step_model": "Scegli modello",
+  "wizard.step_api_key": "Inserisci chiave API",
+  "wizard.step_passphrase": "Passphrase master (opzionale)",
+  "wizard.step_ready": "Pronto!",
+  "wizard.hint_api_key": "La tua chiave verrà cifrata e salvata.",
+  "wizard.hint_passphrase": "Protezione extra per le tue chiavi API.",
+  "wizard.skip": "⏭  Salta configurazione",
+  "wizard.done": "✓ Configurazione completata!",
+  "wizard.ready_hint": "Premi Invio per iniziare...",
+  "wizard.re_run": "🔁  Riesegui wizard di configurazione",
+  "wizard.start": "🚀  Avviare configurazione?",
+  "wizard.set_passphrase": "🔐  Impostare passphrase master?"
 }

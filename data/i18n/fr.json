@@ -487,5 +487,22 @@
   "settings.master_passphrase": "🔐  Définir / modifier la phrase secrète maîtresse",
   "label.cost": "Coûts:",
   "label.confirm_quit": "Confirmer quitter:",
-  "label.cache_size": "Limite cache:"
+  "label.cache_size": "Limite cache:",
+  "wizard.welcome": "Bienvenue dans brokus !",
+  "wizard.tagline": "Configurons tout en 2 minutes.",
+  "wizard.step": "Étape {step}/{total} : {title}",
+  "wizard.step_language": "Choisir la langue",
+  "wizard.step_provider": "Choisir le fournisseur IA",
+  "wizard.step_model": "Choisir le modèle",
+  "wizard.step_api_key": "Saisir la clé API",
+  "wizard.step_passphrase": "Phrase secrète maîtresse (optionnel)",
+  "wizard.step_ready": "Prêt !",
+  "wizard.hint_api_key": "Votre clé sera chiffrée et stockée.",
+  "wizard.hint_passphrase": "Protection supplémentaire pour vos clés API.",
+  "wizard.skip": "⏭  Ignorer la configuration",
+  "wizard.done": "✓ Configuration terminée !",
+  "wizard.ready_hint": "Appuyez sur Entrée pour démarrer...",
+  "wizard.re_run": "🔁  Relancer l'assistant de configuration",
+  "wizard.start": "🚀  Démarrer la configuration ?",
+  "wizard.set_passphrase": "🔐  Définir la phrase secrète ?"
 }

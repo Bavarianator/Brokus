@@ -1171,6 +1171,7 @@ async def settings_menu():
             None,
             t("settings.open_yaml"),
             t("settings.reset"),
+            t("wizard.re_run"),
             t("settings.back"),
         ])
 
@@ -1193,6 +1194,13 @@ async def settings_menu():
         elif choice == 7:
             _reset_settings_to_defaults()
         elif choice == 8:
+            # Remove sentinel so wizard runs again on next start
+            try:
+                WIZARD_SENTINEL.unlink(missing_ok=True)
+            except Exception:
+                pass
+            await first_time_wizard()
+        elif choice == 9:
             break
 
 
@@ -1518,8 +1526,8 @@ def _force_refresh_models():
     pause()
 
 
-def _enter_api_key():
-    section("🔑 API-Key eingeben")
+def _enter_api_key(offer_passphrase: bool = True):
+    section(t("section.api_key"))
 
     providers = _get_providers()
     pc = None
@@ -1568,13 +1576,13 @@ def _enter_api_key():
         console.print(f"  [yellow]Key wurde als Umgebungsvariable gesetzt (temporär).[/yellow]")
 
     # ── Nach dem Speichern: Master-Passphrase anbieten (nur wenn noch keine aktiv) ──
-    if not _has_master_passphrase():
+    if offer_passphrase and not _has_master_passphrase():
         console.print()
         console.print(Rule("🔐 Master-Passphrase", style="bright_blue"))
         console.print("  [dim]Deine secrets.enc ist aktuell nur an deine Maschine gebunden.[/dim]")
         console.print("  [dim]Mit einer Master-Passphrase ist sie ZUSÄTZLICH durch ein Passwort[/dim]")
         console.print("  [dim]geschützt – selbst bei Festplattenklau oder Cloud-Backup bleibt sie unknackbar.[/dim]")
-        if confirm("🔐 Jetzt Master-Passphrase setzen?"):
+        if confirm(t("wizard.set_passphrase")):
             _set_master_passphrase(reencrypt_after=True)
 
     pause()
@@ -1685,7 +1693,7 @@ def _set_master_passphrase(reencrypt_after: bool = True):
     - Optionally re-encrypts the existing ``secrets.enc`` with the new key
       (so existing API keys remain readable)
     """
-    section("🔐 Master-Passphrase setzen")
+    section(t("settings.master_passphrase"))
 
     from brokus.utils.crypto import set_passphrase, _get_passphrase, SecretStore
 
@@ -2166,12 +2174,140 @@ def _pick_export_formats():
 
 
 # ─────────────────────────────────────────────────────────────
+# First-run wizard
+# ─────────────────────────────────────────────────────────────
+
+WIZARD_SENTINEL = Path(CONFIG_PATH.parent / ".wizard_done")
+
+
+def _is_first_run() -> bool:
+    """Return True if the setup wizard has never been completed."""
+    return not WIZARD_SENTINEL.exists()
+
+
+def _mark_wizard_done():
+    """Create the sentinel file so the wizard only runs once."""
+    try:
+        WIZARD_SENTINEL.parent.mkdir(parents=True, exist_ok=True)
+        WIZARD_SENTINEL.touch(exist_ok=True)
+    except Exception:
+        pass
+
+
+def _wizard_step(step: int, total: int, title_key: str):
+    """Print a wizard step header."""
+    console.print()
+    console.print(Rule(
+        t("wizard.step", step=step, total=total, title=t(title_key)),
+        style="bright_blue"
+    ))
+    console.print()
+
+
+async def first_time_wizard():
+    """Interactive first-run setup wizard."""
+    clear()
+    banner()
+    section(t("wizard.welcome"))
+    console.print(f"  [dim]{t('wizard.tagline')}[/dim]")
+    console.print()
+
+    if not confirm(t("wizard.start")):
+        _mark_wizard_done()
+        return
+
+    # Step 1: Language
+    clear()
+    banner()
+    _wizard_step(1, 6, "wizard.step_language")
+    langs = available_languages()
+    labels = [f"{language_name(l)} ({l})" for l in langs]
+    li = choose("", labels)
+    if li >= 0:
+        set_language(langs[li])
+        try:
+            from brokus.utils.settings_loader import load_settings, save_settings
+            cfg = load_settings()
+            cfg.setdefault("ui", {})["language"] = langs[li]
+            save_settings(cfg)
+        except Exception:
+            pass
+
+    # Step 2: Provider
+    clear()
+    banner()
+    _wizard_step(2, 6, "wizard.step_provider")
+    providers = _get_providers()
+    if providers:
+        names = [f"{p['name']}  ({p['cost']})" for p in providers]
+        pi = choose("", names)
+        if pi >= 0:
+            p = providers[pi]
+            settings.provider = p["key"]
+            if p["models"]:
+                settings.model = p["models"][0]
+            settings.save()
+
+    # Step 3: Model
+    clear()
+    banner()
+    _wizard_step(3, 6, "wizard.step_model")
+    models = _get_current_models()
+    if models:
+        mi = choose("", models)
+        if mi >= 0:
+            settings.model = models[mi]
+            settings.save()
+
+    # Step 4: API Key
+    clear()
+    banner()
+    _wizard_step(4, 6, "wizard.step_api_key")
+    console.print(f"  [dim]{t('wizard.hint_api_key')}[/dim]")
+    console.print()
+    _enter_api_key(offer_passphrase=False)
+
+    # Step 5: Master Passphrase (optional)
+    if not _has_master_passphrase():
+        clear()
+        banner()
+        _wizard_step(5, 6, "wizard.step_passphrase")
+        console.print(f"  [dim]{t('wizard.hint_passphrase')}[/dim]")
+        console.print()
+        if confirm(t("wizard.set_passphrase")):
+            _set_master_passphrase(reencrypt_after=True)
+
+    # Step 6: Ready
+    clear()
+    banner()
+    _wizard_step(6, 6, "wizard.step_ready")
+    _settings_table([
+        (t("label.provider"),   f"[bold]{settings.provider}[/bold]"),
+        (t("label.model"),     f"[bold]{settings.model}[/bold]"),
+        (t("label.language"),  f"🌐 {language_name(get_language())}"),
+        (t("label.api_key"),   f"[green]✓[/green]" if _has_api_key() else f"[red]✗[/red]"),
+    ])
+    console.print()
+    console.print(f"  [bold green]{t('wizard.done')}[/bold green]")
+    console.print(f"  [dim]{t('wizard.ready_hint')}[/dim]")
+    pause()
+
+    _mark_wizard_done()
+
+
+# ─────────────────────────────────────────────────────────────
 # Entry point
 # ─────────────────────────────────────────────────────────────
 
+async def _app_entry():
+    if _is_first_run():
+        await first_time_wizard()
+    await main_menu()
+
+
 def run():
     try:
-        asyncio.run(main_menu())
+        asyncio.run(_app_entry())
     except KeyboardInterrupt:
         console.print("\n[cyan]Auf Wiedersehen! 👋[/cyan]\n")
         sys.exit(0)

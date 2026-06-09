@@ -485,5 +485,22 @@
   "settings.master_passphrase": "🔐  Master-Passphrase setzen / ändern",
   "label.cost": "Kosten:",
   "label.confirm_quit": "Beenden:",
-  "label.cache_size": "Cache-Limit:"
+  "label.cache_size": "Cache-Limit:",
+  "wizard.welcome": "Willkommen bei brokus!",
+  "wizard.tagline": "Lass uns in 2 Minuten alles einrichten.",
+  "wizard.step": "Schritt {step}/{total}: {title}",
+  "wizard.step_language": "Sprache wählen",
+  "wizard.step_provider": "KI-Provider wählen",
+  "wizard.step_model": "Modell wählen",
+  "wizard.step_api_key": "API-Key eingeben",
+  "wizard.step_passphrase": "Master-Passphrase (optional)",
+  "wizard.step_ready": "Bereit!",
+  "wizard.hint_api_key": "Dein Key wird verschlüsselt gespeichert.",
+  "wizard.hint_passphrase": "Zusätzlicher Schutz für deine API-Keys.",
+  "wizard.skip": "⏭  Setup überspringen",
+  "wizard.done": "✓ Setup abgeschlossen!",
+  "wizard.ready_hint": "Drücke Enter zum Starten...",
+  "wizard.re_run": "🔁  Setup-Wizard erneut ausführen",
+  "wizard.start": "🚀  Setup starten?",
+  "wizard.set_passphrase": "🔐  Master-Passphrase setzen?"
 }
