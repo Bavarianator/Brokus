@@ -17,7 +17,6 @@ from brokus.utils.logger import log
 # Alle Modelle müssen von OpenRouter unterstützt werden.
 # Siehe config/settings.yaml → openrouter.models für die vollständige Liste.
 CORE_ELEMENTS_MODEL_CHAIN: list[str] = [
-    "google/gemini-2.0-flash-exp:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "moonshotai/kimi-k2.6:free",
     "deepseek/deepseek-chat",
@@ -32,7 +31,8 @@ class CoreElementExtractor:
         self.client = client
         self.prompts = prompts
 
-    async def extract(self, book_idea: str, model: Optional[str] = None) -> CoreElements:
+    async def extract(self, book_idea: str, model: Optional[str] = None,
+                       disable_fallback_chains: bool = False) -> CoreElements:
         """Extract core elements from the user's book idea.
 
         Probiert nacheinander mehrere Modelle aus (Modell-Fallback-Kette),
@@ -41,6 +41,7 @@ class CoreElementExtractor:
         Args:
             book_idea: The user's detailed book description.
             model: Optional model override for multi-model setups.
+            disable_fallback_chains: If True, only use the configured model.
 
         Returns:
             CoreElements with all extracted immutable story facts.
@@ -54,13 +55,18 @@ class CoreElementExtractor:
 
         # Modell-Fallback-Kette aufbauen
         # 1. Das explizite Stage-Modell (z.B. aus UI ausgewählt)
-        # 2. Alle Modelle aus CORE_ELEMENTS_MODEL_CHAIN, die nicht schon probiert wurden
+        # 2. Primäres Modell des Clients
+        # 3. Alle Modelle aus CORE_ELEMENTS_MODEL_CHAIN (nur wenn nicht deaktiviert)
         models_to_try: list[str] = []
         if model:
             models_to_try.append(model)
-        for m in CORE_ELEMENTS_MODEL_CHAIN:
-            if m not in models_to_try:
-                models_to_try.append(m)
+        default = self.client.model if self.client else ""
+        if default and default not in models_to_try:
+            models_to_try.append(default)
+        if not disable_fallback_chains:
+            for m in CORE_ELEMENTS_MODEL_CHAIN:
+                if m not in models_to_try:
+                    models_to_try.append(m)
 
         last_exc: Optional[Exception] = None
         for m in models_to_try:

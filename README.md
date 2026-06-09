@@ -107,9 +107,68 @@ Fantasy · Horror · Science Fiction · Romance · Thriller · Mystery · Histor
 | **JSON** (`.json`) | native | Development, API |
 | **Plain Text** (`.txt`) | native | Universal |
 
+### ☁ Cloud-Upload
+
+Upload finished books directly from the terminal – **three methods**:
+
+| Method | Effort | Providers |
+|---------|--------------|----------|
+| **Nextcloud v2** ⭐ | 🔵 30s – Just URL + Browser login | Nextcloud (WebDAV) |
+| **Google Drive** | 🟡 5min – Client ID + Secret (one-time) | Google Drive API |
+| **rclone** | 🟢 One-time – `rclone config` + 40+ providers | GDrive, OneDrive, S3, Dropbox, … |
+
+#### 🔵 Nextcloud – Login Flow v2 (empfohlen)
+
+Browser-based app-password generation (Nextcloud built-in, no Keycloak required):
+
+```
+Setup:  URL eingeben → Browser öffnet sich → Einloggen + Erlauben ✅
+Upload: WebDAV + automatischer Share-Link
+```
+
+Alternativ: App-Password manuell (Nextcloud → Einstellungen → Sicherheit)
+
+#### 🟡 Google Drive – Einfacher OAuth Flow
+
+Leichtgewichtig (kein `google-api-python-client`):
+
+```
+Setup:  Client ID + Secret eingeben → Browser öffnet sich → Erlauben ✅
+Upload: Google Drive REST API + `webViewLink`
+```
+
+> One-time setup at Google Cloud Console: Create project → Enable Drive API → OAuth 2.0 Desktop credentials
+
+#### 🟢 rclone – Universell (40+ Anbieter)
+
+Systemweites Tool, kein brokus-internes Auth:
+
+```
+Setup:  rclone installieren + `rclone config` → Remote auswählen ✅
+Upload: `rclone copy` → GDrive, OneDrive, S3, Dropbox, Nextcloud, …
+```
+
+```bash
+# Installation (auto-installed by install.sh / bin/brokus)
+brew install rclone    # macOS
+apt install rclone    # Debian/Ubuntu
+```
+
+> **Auto-Install**: `install.sh` and `bin/brokus` detect missing rclone and offer to install it automatically using your system package manager (brew/apt/pacman/dnf).
+
+#### Gemeinsame Features
+
+- **Auto-upload** after export (optional)
+- **Auto-folder creation** on the remote
+- **Share-link generation** (Nextcloud OCS / Google Drive `webViewLink`)
+- **CLI flags**: `--cloud-setup`, `--cloud-status`, `--no-cloud`
+- **Encrypted credentials**: Nextcloud + GDrive creds in `secrets.enc` (AES-256-GCM); rclone nutzt eigene Config
+- **Batch upload**: Single book → all configured providers
+
 ### 🔐 Security
 
 - API keys are **encrypted** and stored in `secrets.enc` (machine-bound key)
+- Cloud credentials are stored **inside the same encrypted file** as API keys
 - Optional **master passphrase** for additional password protection
 - Re-encryption on passphrase rotation
 
@@ -255,6 +314,13 @@ brokus/
 │   ├── schemas.py     #   Pydantic models for structured outputs
 │   └── models.py      #   Provider registry
 ├── core/              # Pipeline, DNA extraction, validation, tracker
+│   ├── cloud/         #   ☁ Cloud-Upload (Nextcloud, Google Drive, rclone)
+│   │   ├── base.py        #   ABC + UploadResult dataclass
+│   │   ├── nextcloud.py   #   WebDAV + Login Flow v2 + OCS Share API
+│   │   ├── gdrive.py      #   Google Drive OAuth 2.0 (REST API)
+│   │   ├── rclone.py      #   rclone subprocess wrapper (40+ Anbieter)
+│   │   ├── oauth.py       #   Keycloak OAuth2 helper
+│   │   └── manager.py     #   Config, orchestration, setup wizard
 │   ├── dna_extractor.py  # Layer 1: DNA extraction (Pre-Generation Lock)
 │   ├── pipeline.py    #   Orchestration: DNA → Synopsis → Characters → Plan → Chapters
 │   ├── validator.py   #   Layer 3: Compliance audit (Post-Generation)
@@ -447,7 +513,15 @@ google-generativeai>=0.8.0  # Google Gemini
 cohere>=5.0.0           # Cohere API
 mistralai>=0.4.0        # Mistral AI
 aiohttp>=3.9.0          # Async HTTP
+
+# Cloud-Upload (optional)
+requests>=2.31.0          # Nextcloud (WebDAV) + Google Drive (REST API)
 ```
+
+> **Note**: Cloud upload needs only `requests` (always installed).
+> Google Drive no longer requires `google-api-python-client` – uses simple REST API calls.
+> rclone is external – auto-installed during `install.sh` / `bin/brokus` setup, or manually: `brew install rclone` / `apt install rclone`.
+> Cloud credentials are stored encrypted inside `secrets.enc` alongside API keys.
 
 ---
 
@@ -465,6 +539,12 @@ aiohttp>=3.9.0          # Async HTTP
 | **Update fails (PEP 668)** | Arch/Manjaro blocks system-wide `pip install` → `install.sh` uses `--break-system-packages` automatically. Manual: `pip install --break-system-packages -e .` |
 | **Update fails (general)** | Git repository present? → `git status` · `pip install -e .` manually |
 | **Update finds same release repeatedly** | Fixed: Version is now detected via `git describe --tags --abbrev=0`, not hardcoded |
+| **Cloud-Upload not offered** | Enable in Settings → Advanced → Cloud-Upload |
+| **Nextcloud connection fails** | Generate an app-password (Nextcloud → Settings → Security) – normal password won't work with WebDAV · Or use Login Flow v2 (browser-based, kein App-Passwort nötig) |
+| **Google Drive auth fails** | Create OAuth 2.0 Desktop credentials in Google Cloud Console → paste Client ID + Secret · Token is cached in `~/.brokus/gdrive_token.json` |
+| **Cloud credentials still ask** | Credentials are stored encrypted in `secrets.enc` – if you rotated the master passphrase, re-save the cloud config |
+| **rclone not found** | Install rclone: `brew install rclone` (macOS) / `apt install rclone` (Debian) / https://rclone.org/install/ |
+| **No rclone remotes listed** | Run `rclone config` to set up a remote (supports 40+ providers: GDrive, Nextcloud, OneDrive, S3, …)
 
 ---
 

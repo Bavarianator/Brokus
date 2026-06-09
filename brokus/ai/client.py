@@ -520,8 +520,7 @@ PROVIDER_REGISTRY["openai_compat"] = ProviderConfig(
 DEFAULT_FALLBACK_MODELS: dict[str, list[str]] = {
     "openrouter": [
         "meta-llama/llama-3.3-70b-instruct:free",
-        "deepseek/deepseek-r1:free",
-        "google/gemini-2.0-flash-exp:free",
+        "deepseek/deepseek-chat",
         "mistralai/mistral-7b-instruct:free",
         "moonshotai/kimi-k2.6:free",
     ],

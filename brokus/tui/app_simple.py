@@ -173,6 +173,11 @@ class Settings:
     confirm_quit: bool = True
     # ── Multi-Modell (Stage-spezifische Modelle) ──
     stage_models: dict[str, str] = field(default_factory=dict)
+    # ── Fallback-Steuerung ──
+    disable_fallback_chains: bool = False
+    # ── Cloud-Upload ──
+    cloud_enabled: bool = False
+    cloud_auto_upload: bool = False
     # ── Advanced ──
     request_timeout: int = 300
     cache_responses: bool = True
@@ -277,7 +282,9 @@ class Settings:
                         setattr(self, k, data[k])
                 for k in ("use_extended_thinking", "auto_export", "auto_open_after_export",
                           "backup_enabled", "show_token_count", "show_cost_estimate",
-                          "confirm_quit", "cache_responses"):
+                          "confirm_quit", "cache_responses",
+                          "cloud_enabled", "cloud_auto_upload",
+                          "disable_fallback_chains"):
                     if k in data:
                         setattr(self, k, bool(data[k]))
             except Exception:
@@ -537,7 +544,7 @@ def ask_multi(prompt_text: str, options: list[tuple[str, str]], defaults: list[s
 
 def pause():
     """Wait for Enter."""
-    console.print("\n[dim]Enter zum Fortfahren...[/dim]")
+    console.print(f"\n[dim]{t('common.press_enter')}[/dim]")
     try:
         _read_line("")
     except (KeyboardInterrupt, EOFError):
@@ -585,11 +592,10 @@ async def _startup_update_check():
     if status.is_update_available:
         console.print()
         console.print(Panel(
-            f"[bold green]📦 Update verfügbar: v{status.latest_version}[/bold green]\n"
-            f"[dim]Aktuelle Version: v{status.current_version}[/dim]\n"
+            f"[bold green]{t('action.update_available', latest=status.latest_version)}[/bold green]\n"
+            f"[dim]{t('label.current_version')} v{status.current_version}[/dim]\n"
             f"\n"
-            f"Gehe zu [bold]Einstellungen → Erweitert → 🔄 Update suchen[/bold]\n"
-            f"um das Update zu installieren.",
+            f"[bold]{t('settings.advanced')} → {t('settings.advanced.update')}[/bold]",
             title="🔄 Update",
             border_style="green",
             padding=(0, 1),
@@ -923,6 +929,7 @@ async def generate_book(idea: str, title: str, genre_key: str, num_chapters: int
             auto_open_after_export=settings.auto_open_after_export,
             backup_enabled=settings.backup_enabled,
             stage_models=settings.stage_models,
+            disable_fallback_chains=settings.disable_fallback_chains,
         )
 
         chapter_count = [0]
@@ -1009,6 +1016,40 @@ async def generate_book(idea: str, title: str, genre_key: str, num_chapters: int
                         console.print(f"  [yellow]⚠[/yellow] {ef.upper():5s} → Bibliothek fehlt (übersprungen)")
                     except Exception as e:
                         console.print(f"  [yellow]⚠[/yellow] {ef.upper():5s} → {e}")
+
+                # Cloud-Upload nach Export anbieten
+                if exported_paths and settings.cloud_enabled:
+                    no_cloud = os.environ.get("BROKUS_NO_CLOUD", "") == "1"
+                    if not no_cloud:
+                        do_upload = settings.cloud_auto_upload or confirm(
+                            "☁ Buch in die Cloud hochladen?"
+                        )
+                        if do_upload:
+                            try:
+                                from brokus.core.cloud.manager import CloudManager
+                                cloud = CloudManager()
+                                if cloud.uploaders:
+                                    exported_paths_objs = [
+                                        Path(p) for p in exported_paths
+                                    ]
+                                    results = cloud.upload_book(
+                                        export_files=exported_paths_objs,
+                                        book_title=title,
+                                    )
+                                    n_ok = sum(1 for r in results if r.success)
+                                    n_total = len(results)
+                                    console.print(
+                                        f"\n  [dim]☁ {n_ok}/{n_total} Upload(s) successful.[/dim]"
+                                    )
+                                else:
+                                    console.print(
+                                        "  [yellow]⚠ No cloud providers configured. "
+                                        "Set up at: Settings → Cloud-Upload[/yellow]"
+                                    )
+                            except Exception as ce:
+                                console.print(
+                                    f"  [yellow]⚠ Cloud-Upload failed: {ce}[/yellow]"
+                                )
 
                 # Auto-Open mit Standard-Dokumentenreader anbieten
                 if exported_paths:
@@ -1441,6 +1482,7 @@ async def _settings_generation_menu():
             (t("label.auto_open"),      _on_off(settings.auto_open_after_export)),
             (t("label.export_formats"), export_v),
             (t("label.wizard_picker"),  _on_off(settings.wizard_model_picker)),
+            (t("label.fallback_chains"),      _on_off(not settings.disable_fallback_chains)),
         ])
 
         choice = choose("", [
@@ -1452,6 +1494,7 @@ async def _settings_generation_menu():
             t("settings.generation.auto_open"),
             t("settings.generation.export_formats"),
             t("settings.generation.wizard_picker"),
+            t("settings.generation.fallback_chains"),
             t("settings.back_to_settings"),
         ])
         if choice == 0: _edit_generation_params()
@@ -1462,7 +1505,21 @@ async def _settings_generation_menu():
         elif choice == 5: _toggle_auto_open()
         elif choice == 6: _pick_export_formats()
         elif choice == 7: _toggle_wizard_model_picker()
-        elif choice == 8: break
+        elif choice == 8: _toggle_fallback_chains()
+        elif choice == 9: break
+
+
+def _toggle_fallback_chains():
+    """Toggle hardcoded fallback chains on/off."""
+    settings.disable_fallback_chains = not settings.disable_fallback_chains
+    settings.save()
+    status = "[green]AUS (nur primäres Modell)[/green]" if settings.disable_fallback_chains else "[red]AN (mit Fallback-Ketten)[/red]"
+    console.print(f"\n  Fallback-Ketten: {status}")
+    if settings.disable_fallback_chains:
+        console.print("  [dim]Nur das konfigurierte Modell wird verwendet – keine hartcodierten Fallbacks.[/dim]")
+    else:
+        console.print("  [dim]Bei Fehlern werden automatisch Ersatz-Modelle aus der Fallback-Kette probiert.[/dim]")
+    pause()
 
 
 async def _settings_ui_menu():
@@ -1494,25 +1551,28 @@ async def _settings_ui_menu():
 
 
 async def _settings_advanced_menu():
-    """Sub-Menu: Timeout, Cache, Cache-Größe, Updates."""
+    """Sub-Menu: Timeout, Cache, Cache-Größe, Updates, Cloud-Upload."""
     while True:
         section(t("settings.advanced.title"))
         _settings_table([
             (t("label.timeout"),    f"{settings.request_timeout}s"),
             (t("label.cache"),       _on_off(settings.cache_responses)),
             (t("label.cache_size"),  f"{settings.max_cache_size_mb} MB"),
+            (t("settings.cloud.title"), _on_off(settings.cloud_enabled)),
         ])
 
         choice = choose("", [
             t("settings.advanced.edit"),
             t("settings.advanced.cache"),
+            t("settings.cloud.title"),
             t("settings.advanced.update"),
             t("settings.back_to_settings"),
         ])
         if choice == 0: _edit_advanced_params()
         elif choice == 1: _toggle_cache()
-        elif choice == 2: await _run_update_check()
-        elif choice == 3: break
+        elif choice == 2: await _cloud_settings_menu()
+        elif choice == 3: await _run_update_check()
+        elif choice == 4: break
 
 
 # ─────────────────────────────────────────────────────────────
@@ -2112,17 +2172,68 @@ def _toggle_cache():
     pause()
 
 
+# ─────────────────────────────────────────────────────────────
+# Cloud-Upload Menu
+# ─────────────────────────────────────────────────────────────
+
+async def _cloud_settings_menu():
+    """Sub-sub-menu: Configure cloud upload providers."""
+    from brokus.core.cloud.manager import CloudManager
+
+    while True:
+        section(t("settings.cloud.title"))
+        _settings_table([
+            (t("settings.cloud.enable"), _on_off(settings.cloud_enabled)),
+            (t("settings.cloud.auto_upload"), _on_off(settings.cloud_auto_upload)),
+        ])
+
+        cm = CloudManager()
+        if cm.uploaders:
+            for up in cm.uploaders:
+                ok = up.test_connection()
+                icon = "[green]✓[/green]" if ok else "[red]✗[/red]"
+                console.print(f"  {icon} {up.name}")
+        else:
+            console.print(f"  [dim]No providers configured.[/dim]")
+
+        choice = choose("", [
+            t("settings.cloud.toggle"),
+            t("settings.cloud.auto_toggle"),
+            t("settings.cloud.setup"),
+            t("settings.cloud.status"),
+            t("settings.back_to_settings"),
+        ])
+        if choice == 0:
+            settings.cloud_enabled = not settings.cloud_enabled
+            settings.save()
+            console.print(f"\n  [green]✓ Cloud-Upload {'enabled' if settings.cloud_enabled else 'disabled'}.[/green]")
+            pause()
+        elif choice == 1:
+            settings.cloud_auto_upload = not settings.cloud_auto_upload
+            settings.save()
+            console.print(f"\n  [green]✓ Auto-Upload {'enabled' if settings.cloud_auto_upload else 'disabled'}.[/green]")
+            pause()
+        elif choice == 2:
+            cm.setup_wizard()
+            pause()
+        elif choice == 3:
+            cm.show_status()
+            pause()
+        elif choice == 4:
+            break
+
+
 async def _run_update_check():
     """Check for updates and offer to install."""
     from brokus.utils.updater import check_for_updates, perform_update
 
     section(t("section.update"))
-    console.print("  🔍 Suche nach Updates...")
+    console.print(f"  {t('action.update_checking')}")
 
     try:
         status = await check_for_updates()
     except Exception as e:
-        console.print(f"  [red]❌ Update-Check fehlgeschlagen: {e}[/red]")
+        console.print(f"  [red]{t('action.update_failed', error=e)}[/red]")
         pause()
         return
 
@@ -2132,14 +2243,14 @@ async def _run_update_check():
         return
 
     console.print()
-    console.print(f"  [bold]Aktuelle Version:[/bold]  v{status.current_version}")
-    console.print(f"  [bold]Neueste Version:[/bold]  v{status.latest_version}")
+    console.print(f"  [bold]{t('label.current_version')}[/bold]  v{status.current_version}")
+    console.print(f"  [bold]{t('label.latest_version')}[/bold]  v{status.latest_version}")
 
     if status.is_update_available:
-        console.print(f"\n  [bold green]📦 Update verfügbar![/bold green]")
+        console.print(f"\n  [bold green]{t('action.update_available', latest=status.latest_version)}[/bold green]")
         if status.release_notes:
             notes_lines = status.release_notes.strip().split("\n")[:10]
-            console.print(f"  [dim]Release-Notes:[/dim]")
+            console.print(f"  [dim]{t('action.update_release_notes')}[/dim]")
             for line in notes_lines:
                 console.print(f"    {line}")
             if len(status.release_notes.strip().split("\n")) > 10:
@@ -2148,21 +2259,21 @@ async def _run_update_check():
 
         if confirm(t("action.update_confirm")):
             console.print()
-            console.print("  ⏳ Update wird installiert (git pull + pip install)...")
+            console.print(f"  {t('action.update_installing')}")
             try:
                 success, msg = await perform_update(status)
                 if success:
                     console.print(f"  [bold green]✅ {msg}[/bold green]")
-                    console.print("  [dim]Starte brokus neu, um die neue Version zu nutzen.[/dim]")
+                    console.print(f"  [dim]{t('action.update_success', version=status.latest_version)}[/dim]")
                 else:
                     console.print(f"  [red]❌ {msg}[/red]")
             except Exception as e:
-                console.print(f"  [red]❌ Update fehlgeschlagen: {e}[/red]")
+                console.print(f"  [red]{t('action.update_failed', error=e)}[/red]")
     else:
-        console.print(f"\n  [green]✅ Brokus ist aktuell (v{status.current_version}).[/green]")
+        console.print(f"\n  [green]{t('action.update_current', version=status.current_version)}[/green]")
 
     if status.release_url:
-        console.print(f"\n  [dim]Release-Seite: {status.release_url}[/dim]")
+        console.print(f"\n  [dim]{t('action.update_release_url', url=status.release_url)}[/dim]")
 
     pause()
 
@@ -2439,7 +2550,7 @@ async def first_time_wizard():
     # Step 1: Language
     clear()
     banner()
-    _wizard_step(1, 6, "wizard.step_language")
+    _wizard_step(1, 7, "wizard.step_language")
     langs = available_languages()
     labels = [f"{language_name(l)} ({l})" for l in langs]
     li = choose("", labels)
@@ -2456,7 +2567,7 @@ async def first_time_wizard():
     # Step 2: Provider
     clear()
     banner()
-    _wizard_step(2, 6, "wizard.step_provider")
+    _wizard_step(2, 7, "wizard.step_provider")
     providers = _get_providers()
     if providers:
         names = [f"{p['name']}  ({p['cost']})" for p in providers]
@@ -2471,7 +2582,7 @@ async def first_time_wizard():
     # Step 3: Model
     clear()
     banner()
-    _wizard_step(3, 6, "wizard.step_model")
+    _wizard_step(3, 7, "wizard.step_model")
     models = _get_current_models()
     if models:
         mi = choose("", models)
@@ -2482,7 +2593,7 @@ async def first_time_wizard():
     # Step 4: API Key
     clear()
     banner()
-    _wizard_step(4, 6, "wizard.step_api_key")
+    _wizard_step(4, 7, "wizard.step_api_key")
     console.print(f"  [dim]{t('wizard.hint_api_key')}[/dim]")
     console.print()
     _enter_api_key(offer_passphrase=False)
@@ -2491,16 +2602,28 @@ async def first_time_wizard():
     if not _has_master_passphrase():
         clear()
         banner()
-        _wizard_step(5, 6, "wizard.step_passphrase")
+        _wizard_step(5, 7, "wizard.step_passphrase")
         console.print(f"  [dim]{t('wizard.hint_passphrase')}[/dim]")
         console.print()
         if confirm(t("wizard.set_passphrase")):
             _set_master_passphrase(reencrypt_after=True)
 
-    # Step 6: Ready
+    # Step 6: Cloud-Setup (optional)
     clear()
     banner()
-    _wizard_step(6, 6, "wizard.step_ready")
+    _wizard_step(6, 7, "wizard.step_cloud")
+    if confirm(t("cloud.ask_setup")):
+        from brokus.core.cloud.manager import CloudManager
+        CloudManager().setup_wizard()
+    else:
+        console.print(f"  [dim]{t('cloud.skipped')}[/dim]")
+    console.print()
+    pause()
+
+    # Step 7: Ready
+    clear()
+    banner()
+    _wizard_step(7, 7, "wizard.step_ready")
     _settings_table([
         (t("label.provider"),   f"[bold]{settings.provider}[/bold]"),
         (t("label.model"),     f"[bold]{settings.model}[/bold]"),
