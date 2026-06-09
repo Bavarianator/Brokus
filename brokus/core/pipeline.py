@@ -24,20 +24,17 @@ from brokus.utils.logger import log
 STAGE_MODEL_CHAIN: dict[str, list[str]] = {
     "characters": [
         "meta-llama/llama-3.3-70b-instruct:free",
-        "google/gemini-2.0-flash-exp:free",
         "moonshotai/kimi-k2.6:free",
         "deepseek/deepseek-chat",
         "mistralai/mistral-7b-instruct:free",
     ],
     "chapter_plan": [
-        "google/gemini-2.0-flash-exp:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "moonshotai/kimi-k2.6:free",
         "deepseek/deepseek-chat",
         "mistralai/mistral-7b-instruct:free",
     ],
     "synopsis": [
-        "google/gemini-2.0-flash-exp:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "moonshotai/kimi-k2.6:free",
         "deepseek/deepseek-chat",
@@ -47,7 +44,6 @@ STAGE_MODEL_CHAIN: dict[str, list[str]] = {
         "mistralai/mistral-7b-instruct:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "deepseek/deepseek-chat",
-        "google/gemini-2.0-flash-exp:free",
         "moonshotai/kimi-k2.6:free",
     ],
 }
@@ -76,6 +72,7 @@ class BookPipeline:
         auto_open_after_export: bool = True,
         backup_enabled: bool = True,
         stage_models: Optional[dict[str, str]] = None,
+        disable_fallback_chains: bool = False,
     ):
         self.client = client
         self.prompts = prompts
@@ -97,6 +94,7 @@ class BookPipeline:
         self._auto_open_after_export = auto_open_after_export
         self._backup_enabled = backup_enabled
         self._stage_models = stage_models or {}
+        self._disable_fallback_chains = disable_fallback_chains
 
         self._progress_callback: Optional[ProgressCallback] = None
         self._paused = False
@@ -158,7 +156,10 @@ class BookPipeline:
 
         # ── Stage 0: Core Elements ──
         await self._report("Kernelemente", 0.05, "Extrahiere Kernelemente...")
-        core_elements = await self.extractor.extract(book_idea, model=self._stage_models.get("core_elements"))
+        core_elements = await self.extractor.extract(
+            book_idea, model=self._stage_models.get("core_elements"),
+            disable_fallback_chains=self._disable_fallback_chains,
+        )
         await self._sleep_check()
 
         # ── Stage 1: Synopsis ──
@@ -486,9 +487,9 @@ class BookPipeline:
         Baue eine Modell-Liste für eine Stage.
         1. Das explizite Stage-Modell (falls gesetzt, z.B. aus stage_models)
         2. Default-Modell des Clients
-        3. Fallback-Kette aus STAGE_MODEL_CHAIN
+        3. Fallback-Kette aus STAGE_MODEL_CHAIN (nur wenn nicht deaktiviert)
         """
-        chain = list(STAGE_MODEL_CHAIN.get(stage_name, []))
+        chain = list(STAGE_MODEL_CHAIN.get(stage_name, [])) if not self._disable_fallback_chains else []
         default = self.client.model if self.client else ""
         models: list[str] = []
 

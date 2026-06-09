@@ -100,6 +100,18 @@ def main():
         "--version", action="store_true",
         help="Show version",
     )
+    parser.add_argument(
+        "--cloud-setup", action="store_true",
+        help="Configure cloud upload providers (Nextcloud, Google Drive)",
+    )
+    parser.add_argument(
+        "--cloud-status", action="store_true",
+        help="Show active cloud providers and their connection status",
+    )
+    parser.add_argument(
+        "--no-cloud", action="store_true",
+        help="Skip cloud upload prompt for this run",
+    )
     args = parser.parse_args()
 
     if args.version:
@@ -110,6 +122,21 @@ def main():
     if args.set_master_password:
         _cli_set_master_password()
         return
+
+    if args.cloud_setup:
+        from brokus.core.cloud.manager import CloudManager
+        CloudManager().setup_wizard()
+        return
+
+    if args.cloud_status:
+        from brokus.core.cloud.manager import CloudManager
+        CloudManager().show_status()
+        return
+
+    # Store --no-cloud in an env var so app_simple can read it
+    if args.no_cloud:
+        import os
+        os.environ["BROKUS_NO_CLOUD"] = "1"
 
     if args.tui:
         try:
