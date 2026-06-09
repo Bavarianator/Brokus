@@ -120,6 +120,37 @@ def language_name(code: str) -> str:
     return names.get(code, code)
 
 
+def t_label(category: str, key: str, default: Optional[str] = None) -> str:
+    """Look up a translated label for a YAML/config entry by category.
+
+    Convenience wrapper for keys like ``"genre.drama.name"`` or
+    ``"provider.anthropic.note"``. Falls back through the same chain
+    as :func:`t` (active language → default → default value → key).
+
+    Parameters
+    ----------
+    category : str
+        Top-level namespace, e.g. ``"genre"`` or ``"provider"``.
+    key : str
+        Entry key, e.g. ``"drama"`` or ``"anthropic"``.
+    default : str, optional
+        Value to return when neither the active language nor the
+        default language has a translation. Defaults to the key itself.
+
+    Examples
+    --------
+    >>> t_label("genre", "drama")  # current language's "Drama"
+    >>> t_label("provider", "anthropic", default="Anthropic")
+    """
+    full = f"{category}.{key}"
+    text = _load(_CURRENT_LANG).get(full)
+    if text is None and _CURRENT_LANG != _DEFAULT_LANG:
+        text = _load(_DEFAULT_LANG).get(full)
+    if text is None:
+        return default if default is not None else full
+    return text
+
+
 def t(key: str, **kwargs) -> str:
     """Translate ``key`` using the active language.
 

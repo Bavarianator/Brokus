@@ -6,14 +6,16 @@ from textual.containers import Container, Horizontal, VerticalScroll
 from textual.widgets import Static, Button, Checkbox, Header, Footer
 from textual.binding import Binding
 
+from brokus.utils.i18n import t
+
 
 EXPORT_OPTIONS = [
-    ("md", "Markdown (.md)"),
-    ("epub", "EPUB (.epub)"),
-    ("pdf", "PDF (.pdf)"),
-    ("docx", "Word (.docx)"),
-    ("json", "JSON (.json)"),
-    ("txt", "Nur Text (.txt)"),
+    ("md", "tui.export.fmt_label_md"),
+    ("epub", "tui.export.fmt_label_epub"),
+    ("pdf", "tui.export.fmt_label_pdf"),
+    ("docx", "tui.export.fmt_label_docx"),
+    ("json", "tui.export.fmt_label_json"),
+    ("txt", "tui.export.fmt_label_txt"),
 ]
 
 DEFAULT_FORMATS = ["md", "epub"]
@@ -23,8 +25,8 @@ class ExportScreen(Screen):
     """Export dialog for book formats – multi-select."""
 
     BINDINGS = [
-        Binding("x", "do_export", "Exportieren"),
-        Binding("escape", "go_back", "Zurück"),
+        Binding("x", "do_export", t("tui.export.binding_export")),
+        Binding("escape", "go_back", t("tui.export.binding_back")),
     ]
 
     def __init__(self):
@@ -34,25 +36,29 @@ class ExportScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Container(id="export-container"):
-            yield Static("📤 Export", classes="section-title")
+            yield Static(t("tui.export.title"), classes="section-title")
             yield Static("", classes="spacer")
 
-            yield Static("Export-Formate (mehrere möglich):", classes="form-label")
+            yield Static(t("tui.export.formats_label"), classes="form-label")
             with VerticalScroll(id="format-list"):
-                for key, label in EXPORT_OPTIONS:
-                    yield Checkbox(label, value=(key in DEFAULT_FORMATS), id=f"fmt-{key}")
+                for key, label_key in EXPORT_OPTIONS:
+                    yield Checkbox(
+                        t(label_key),
+                        value=(key in DEFAULT_FORMATS),
+                        id=f"fmt-{key}",
+                    )
 
             yield Static("", classes="spacer")
-            yield Static("Optionen:", classes="form-label")
-            yield Checkbox("Synopsis einbinden", value=True, id="chk-synopsis")
-            yield Checkbox("Metadaten hinzufügen", value=True, id="chk-metadata")
+            yield Static(t("tui.export.options_label"), classes="form-label")
+            yield Checkbox(t("tui.export.opt_synopsis"), value=True, id="chk-synopsis")
+            yield Checkbox(t("tui.export.opt_metadata"), value=True, id="chk-metadata")
 
             yield Static("", classes="spacer")
             with Horizontal(id="export-actions"):
-                yield Button("📤 Jetzt exportieren", id="btn-export", variant="success")
-                yield Button("📂 Alle aktivieren", id="btn-all")
-                yield Button("✖  Keine", id="btn-none")
-                yield Button("← Zurück", id="btn-back")
+                yield Button(t("tui.export.btn_export"), id="btn-export", variant="success")
+                yield Button(t("tui.export.btn_all"), id="btn-all")
+                yield Button(t("tui.export.btn_none"), id="btn-none")
+                yield Button(t("tui.export.btn_back"), id="btn-back")
 
             yield Static("", id="export-status", classes="spacer")
 
@@ -68,7 +74,7 @@ class ExportScreen(Screen):
                 self._project_id = projects[project_index]["id"]
                 title = projects[project_index]["title"]
                 self.query_one("#export-container Static:first-child").update(
-                    f"📤 Export: {title}"
+                    t("tui.export.title_with_book", title=title)
                 )
         except Exception:
             pass
@@ -123,18 +129,22 @@ class ExportScreen(Screen):
         formats = self._get_selected_formats()
         if not formats:
             self.query_one("#export-status", Static).update(
-                "❌ Kein Format ausgewählt – bitte mindestens ein Häkchen setzen."
+                t("tui.export.no_format")
             )
             return
 
         names = ", ".join(f.upper() for f in formats)
-        self.query_one("#export-status", Static).update(f"Exportiere als {names}...")
+        self.query_one("#export-status", Static).update(
+            t("tui.export.exporting", names=names)
+        )
         asyncio.create_task(self._run_export(formats))
 
     async def _run_export(self, formats: list[str]):
         """Run the export process for multiple formats."""
         if not self._project_id:
-            self.query_one("#export-status", Static).update("❌ Kein Projekt ausgewählt.")
+            self.query_one("#export-status", Static).update(
+                t("tui.export.no_project")
+            )
             return
 
         try:
@@ -145,7 +155,9 @@ class ExportScreen(Screen):
             chapters = await get_all_chapters(self._project_id)
 
             if not project:
-                self.query_one("#export-status", Static).update("❌ Projekt nicht gefunden.")
+                self.query_one("#export-status", Static).update(
+                    t("tui.export.project_not_found")
+                )
                 return
 
             exporter = Exporter()
@@ -169,32 +181,40 @@ class ExportScreen(Screen):
                     results.append((fmt, output_path))
                 except ImportError as e:
                     module = str(e).split("'")[1] if "'" in str(e) else str(e)
-                    errors.append(f"{fmt.upper()}: Bibliothek fehlt ({module})")
+                    errors.append(
+                        t("tui.export.library_missing", fmt=fmt.upper(), module=module)
+                    )
                 except Exception as e:
                     errors.append(f"{fmt.upper()}: {e}")
 
             # Status message
             status = self.query_one("#export-status", Static)
             if results:
-                lines = [f"✅ {len(results)} Format(e) exportiert:"]
+                lines = [t("tui.export.success_header", n=len(results))]
                 for fmt, p in results:
-                    lines.append(f"  • {fmt.upper()} → {p.name}")
+                    lines.append(
+                        t("tui.export.success_line", fmt=fmt.upper(), name=p.name)
+                    )
                 if errors:
                     lines.append("")
-                    lines.append("⚠ Fehler:")
-                    lines.extend(f"  • {e}" for e in errors)
+                    lines.append(t("tui.export.errors_header"))
+                    lines.extend(
+                        t("tui.export.errors_line", error=e) for e in errors
+                    )
                 status.update("\n".join(lines))
                 self.notify(
-                    f"{len(results)} Export(s) abgeschlossen",
-                    title="Erfolg",
+                    t("tui.export.success_header", n=len(results)),
+                    title=t("tui.generation.success"),
                 )
             else:
-                status.update("❌ Kein Format konnte exportiert werden.")
-                self.notify("Export fehlgeschlagen", severity="error")
+                status.update(t("tui.export.all_failed"))
+                self.notify(t("tui.export.failed"), severity="error")
 
         except Exception as e:
-            self.query_one("#export-status", Static).update(f"❌ Fehler: {e}")
-            self.notify(f"Export fehlgeschlagen: {e}", severity="error")
+            self.query_one("#export-status", Static).update(
+                f"❌ {t('tui.export.failed')}: {e}"
+            )
+            self.notify(f"{t('tui.export.failed')}: {e}", severity="error")
 
     def action_go_back(self):
         self.app.navigate_to("editor")

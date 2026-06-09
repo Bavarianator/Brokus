@@ -13,6 +13,8 @@ from textual.widgets import (
 from textual.binding import Binding
 from textual import events
 
+from brokus.utils.i18n import t
+
 
 class NewBookScreen(Screen):
     """Two-mode wizard for creating a new book."""
@@ -110,14 +112,14 @@ class NewBookScreen(Screen):
 
     def _step_mode_select(self) -> Container:
         return Container(
-            Static("📖 Neues Buch", classes="wizard-header"),
-            Static("Wie möchtest du starten?", classes="wizard-subtitle"),
+            Static(t("tui.welcome.btn_new"), classes="wizard-header"),
+            Static(t("tui.new_book.subtitle"), classes="wizard-subtitle"),
             Static("", classes="spacer"),
-            Button("⚡ Schnell – Idee + Titel + Genre", id="btn-mode-schnell", variant="primary"),
+            Button(t("tui.new_book.btn_schnell"), id="btn-mode-schnell", variant="primary"),
             Static("", classes="spacer"),
-            Button("🎛️  Detailliert – Alle Optionen", id="btn-mode-detailliert"),
+            Button(t("tui.new_book.btn_detailliert"), id="btn-mode-detailliert"),
             Static("", classes="spacer"),
-            Static("Taste [1] oder [2] zum Auswählen", classes="form-hint"),
+            Static(t("tui.new_book.hint_1_or_2"), classes="form-hint"),
             id="step-container",
         )
 
@@ -127,8 +129,8 @@ class NewBookScreen(Screen):
         total = 3 if self._mode == "schnell" else 7
         icon = "⚡" if self._mode == "schnell" else "🎛️"
         return Container(
-            Static(f"{icon} {self._mode.title()} · Schritt {self._step + 1}/{total}: Deine Idee", classes="wizard-header"),
-            Static("Beschreibe dein Buch so detailliert wie möglich:", classes="form-label"),
+            Static(f"{icon} {self._mode.title()} · {t('tui.new_book.idea_label', default='')}", classes="wizard-header"),
+            Static(t("tui.new_book.idea_label"), classes="form-label"),
             TextArea(id="textarea-idea"),
             id="step-container",
         )
@@ -137,16 +139,16 @@ class NewBookScreen(Screen):
 
     def _step_title_genre(self) -> Container:
         items = [ListItem(Label(f"  [{i + 1}] {name}")) for i, (name, _) in enumerate(self.TOP_GENRES)]
-        items.append(ListItem(Label("  [0] Mehr...")))
+        items.append(ListItem(Label(t("tui.new_book.genre_more"))))
         return Container(
             Static("⚡ Schnell · Schritt 2/3: Titel & Genre", classes="wizard-header"),
-            Static("Titel:", classes="form-label"),
-            Input(placeholder="z.B. Die Insel-Utopie", id="input-title"),
+            Static(t("tui.new_book.title_input_label"), classes="form-label"),
+            Input(placeholder=t("tui.new_book.title_placeholder"), id="input-title"),
             Static("", classes="spacer"),
-            Static("Genre (Zahl wählen):", classes="form-label"),
+            Static(t("tui.new_book.genre_label"), classes="form-label"),
             ListView(*items, id="list-genre"),
             Static("", classes="spacer"),
-            Container(Static("TAB: Titel↔Genre  |  ENTER: Weiter  |  ESC: Zurück", classes="form-hint"), id="hint-bar"),
+            Container(Static(t("tui.new_book.tab_hint"), classes="form-hint"), id="hint-bar"),
             id="step-container",
         )
 
@@ -155,10 +157,10 @@ class NewBookScreen(Screen):
     def _step_title(self) -> Container:
         return Container(
             Static("🎛️  Detailliert · Schritt 2/7: Titel", classes="wizard-header"),
-            Static("Buchtitel:", classes="form-label"),
-            Input(placeholder="z.B. Die Insel-Utopie", id="input-title"),
+            Static(t("tui.new_book.title_input_label"), classes="form-label"),
+            Input(placeholder=t("tui.new_book.title_placeholder"), id="input-title"),
             Static("", classes="spacer"),
-            Container(Static("K  KI schlägt 3 Titel vor", classes="form-hint"), id="hint-bar"),
+            Container(Static(t("tui.new_book.title_ki_hint"), classes="form-hint"), id="hint-bar"),
             id="step-container",
         )
 
@@ -168,7 +170,7 @@ class NewBookScreen(Screen):
         genres = self.TOP_GENRES + self.MORE_GENRES if self._show_more_genres else self.TOP_GENRES
         items = [ListItem(Label(f"  [{i + 1}] {'>' if g[1] == self._genre else ' '} {g[0]}")) for i, g in enumerate(genres)]
         if not self._show_more_genres:
-            items.append(ListItem(Label("  [0] Mehr...")))
+            items.append(ListItem(Label(t("tui.new_book.genre_more"))))
         return Container(
             Static("🎛️  Detailliert · Schritt 3/7: Genre (Zahl wählen)", classes="wizard-header"),
             ListView(*items, id="list-genre"),
@@ -201,13 +203,13 @@ class NewBookScreen(Screen):
         ]
         return Container(
             Static("🎛️  Detailliert · Schritt 5/7: Perspektive", classes="wizard-header"),
-            Static("Erzählperspektive (Zahl wählen):", classes="form-label"),
+            Static(t("tui.new_book.perspective_label"), classes="form-label"),
             ListView(*p_items, id="list-perspective"),
             Static("", classes="spacer"),
-            Static("Zeitform (Zahl wählen):", classes="form-label"),
+            Static(t("tui.new_book.tense_label"), classes="form-label"),
             ListView(*t_items, id="list-tense"),
             Static("", classes="spacer"),
-            Container(Static("TAB: Persp.↔Zeitform  |  Ziffer: Auswahl  |  ENTER: Weiter", classes="form-hint"), id="hint-bar"),
+            Container(Static(t("tui.new_book.persp_hint"), classes="form-hint"), id="hint-bar"),
             id="step-container",
         )
 
@@ -219,13 +221,13 @@ class NewBookScreen(Screen):
         return Container(
             Static("🎛️  Detailliert · Schritt 6/7: Umfang", classes="wizard-header"),
             Static("", classes="spacer"),
-            Static(f"Kapitel:       ◀  {self._num_chapters:2d}  ▶   (← →)", classes="scope-line"),
+            Static(t("tui.new_book.scope_chapters", n=self._num_chapters), classes="scope-line"),
             Static("", classes="spacer"),
-            Static(f"Wörter/Kap.:   ◀  {self._words_per_chapter:4d}  ▶   (← →)", classes="scope-line"),
+            Static(t("tui.new_book.scope_words", n=self._words_per_chapter), classes="scope-line"),
             Static("", classes="spacer"),
-            Static(f"Gesamt: ~{total_words:,} Wörter  (~{pages} Seiten)", classes="scope-total"),
+            Static(t("tui.new_book.scope_total", n=total_words, pages=pages), classes="scope-total"),
             Static("", classes="spacer"),
-            Container(Static("TAB wechselt  |  ← → ändert Wert  |  ENTER Weiter", classes="form-hint"), id="hint-bar"),
+            Container(Static(t("tui.new_book.scope_hint"), classes="form-hint"), id="hint-bar"),
             id="step-container",
         )
 
@@ -233,17 +235,24 @@ class NewBookScreen(Screen):
 
     def _step_confirm_schnell(self) -> Container:
         genre_name = dict(self.TOP_GENRES + self.MORE_GENRES).get(self._genre, self._genre)
+        keiner = t("tui.new_book.confirm_keiner")
+        idea = self._idea
+        idea_line = (
+            t("tui.new_book.idea_truncated", idea=idea[:60])
+            if len(idea) > 60
+            else t("tui.new_book.idea_short", idea=idea)
+        )
         return Container(
             Static("✅ Schnell · Schritt 3/3: Bereit!", classes="wizard-header"),
             Static("", classes="spacer"),
-            Static(f"Titel    {self._title or '(keiner)'}", classes="confirm-line"),
-            Static(f"Genre    {genre_name}", classes="confirm-line"),
-            Static(f"Idee     {self._idea[:60]}{'...' if len(self._idea) > 60 else ''}", classes="confirm-line"),
+            Static(f"{t('tui.new_book.confirm_label_title'):<12} {self._title or keiner}", classes="confirm-line"),
+            Static(f"{t('tui.new_book.confirm_label_genre'):<12} {genre_name}", classes="confirm-line"),
+            Static(f"{t('tui.new_book.confirm_label_idea'):<12} {idea_line}", classes="confirm-line"),
             Static("", classes="spacer"),
-            Static("KI wählt automatisch:", classes="form-label"),
-            Static("Stil, Perspektive, Kapitelanzahl, Sprache", classes="confirm-line"),
+            Static(t("tui.new_book.ki_chooses"), classes="form-label"),
+            Static(t("tui.new_book.ki_chooses_details"), classes="confirm-line"),
             Static("", classes="spacer"),
-            Static("M  Mehr Optionen    ENTER Generieren", classes="form-hint"),
+            Static(t("tui.new_book.confirm_hint_schnell"), classes="form-hint"),
             id="step-container",
         )
 
@@ -254,17 +263,18 @@ class NewBookScreen(Screen):
         tense_name = dict(self.TENSES).get(self._tense, self._tense)
         total_words = self._num_chapters * self._words_per_chapter
         pages = total_words // 250
+        keiner = t("tui.new_book.confirm_keiner")
         return Container(
             Static("✅ Detailliert · Schritt 7/7: Übersicht", classes="wizard-header"),
             Static("", classes="spacer"),
-            Static(f"Titel        {self._title or '(keiner)'}", classes="confirm-line"),
-            Static(f"Genre        {genre_name}", classes="confirm-line"),
-            Static(f"Zielgruppe   {audience_name}", classes="confirm-line"),
-            Static(f"Perspektive  {persp_name} / {tense_name}", classes="confirm-line"),
-            Static(f"Kapitel      {self._num_chapters}  │  Wörter/Kap  {self._words_per_chapter}", classes="confirm-line"),
-            Static(f"Gesamt       ~{total_words:,} Wörter  (~{pages} Seiten)", classes="confirm-line"),
+            Static(f"{t('tui.new_book.confirm_label_title'):<12} {self._title or keiner}", classes="confirm-line"),
+            Static(f"{t('tui.new_book.confirm_label_genre'):<12} {genre_name}", classes="confirm-line"),
+            Static(f"{t('tui.new_book.confirm_label_audience'):<12} {audience_name}", classes="confirm-line"),
+            Static(f"{t('tui.new_book.confirm_label_perspective'):<12} {persp_name} / {tense_name}", classes="confirm-line"),
+            Static(f"{t('tui.new_book.confirm_label_chapters'):<12} {self._num_chapters}  │  {t('tui.new_book.confirm_label_words')}  {self._words_per_chapter}", classes="confirm-line"),
+            Static(f"{t('tui.new_book.confirm_label_total'):<12} ~{total_words:,}  (~{pages})", classes="confirm-line"),
             Static("", classes="spacer"),
-            Container(Static("ENTER Generieren    ESC Zurück", classes="form-hint"), id="hint-bar"),
+            Container(Static(t("tui.new_book.confirm_hint_detailed"), classes="form-hint"), id="hint-bar"),
             id="step-container",
         )
 
@@ -397,9 +407,9 @@ class NewBookScreen(Screen):
 
     def _suggest_titles(self):
         if not self._idea.strip():
-            self.notify("Bitte erst die Idee eingeben.", severity="warning")
+            self.notify(t("tui.new_book.need_idea"), severity="warning")
             return
-        self.notify("Titelvorschläge werden generiert...", title="KI")
+        self.notify(t("tui.new_book.generating_titles"), title=t("tui.new_book.ai"))
         import asyncio
         asyncio.create_task(self._generate_titles())
 
@@ -412,13 +422,16 @@ class NewBookScreen(Screen):
                 f"Buchidee: {self._idea}\n\nSchlage 3 Titel vor. Nur die Titel, je eine Zeile.",
                 temperature=0.9, max_tokens=200,
             )
-            titles = [t.strip().lstrip("0123456789. -") for t in response.text.split("\n") if t.strip()]
+            titles = [line.strip().lstrip("0123456789. -") for line in response.text.split("\n") if line.strip()]
             if titles:
                 self._title = titles[0]
-                self.notify(f"Titel gesetzt: {self._title}", title="KI")
+                self.notify(
+                    t("tui.new_book.title_set", title=self._title),
+                    title=t("tui.new_book.ai"),
+                )
                 self._show_step()
         except Exception as e:
-            self.notify(f"Fehler: {e}", severity="error")
+            self.notify(f"{t('common.error_prefix', default='Fehler: ')}{e}", severity="error")
 
     # ── Actions ───────────────────────────────────────────────
 
@@ -503,9 +516,9 @@ class NewBookScreen(Screen):
 
     def _start_generation(self):
         if not self._title:
-            self.notify("Bitte gib einen Titel ein.", severity="warning"); return
+            self.notify(t("tui.new_book.need_title"), severity="warning"); return
         if not self._idea.strip():
-            self.notify("Bitte beschreibe deine Buchidee.", severity="warning"); return
+            self.notify(t("tui.new_book.need_idea_full"), severity="warning"); return
         if self._mode == "schnell":
             idea_lower = self._idea.lower()
             if any(w in idea_lower for w in ["jugend", "teenager", "jung", "coming"]):

@@ -245,9 +245,10 @@ class SettingsScreen(Screen):
             key: cfg for key, cfg in PROVIDER_REGISTRY.items()
         }
 
+        from brokus.utils.i18n import t_label
         provider_select = self.query_one("#select-provider", Select)
         options = [
-            (f"{cfg.name} – {cfg.cost_info}", key)
+            (f"{t_label('provider', f'{key}.name', default=cfg.name)} – {cfg.cost_info}", key)
             for key, cfg in self._provider_data.items()
         ]
         provider_select.set_options(options)

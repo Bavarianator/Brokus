@@ -6,15 +6,17 @@ from textual.containers import Container, Center, Vertical
 from textual.widgets import Static, Button, Header, Footer
 from textual.binding import Binding
 
+from brokus.utils.i18n import t
+
 
 class WelcomeScreen(Screen):
     """Welcome screen with ASCII art and main menu."""
 
     BINDINGS = [
-        Binding("n", "new_book", "Neues Buch"),
-        Binding("o", "open_library", "Bibliothek"),
-        Binding("e", "open_settings", "Einstellungen"),
-        Binding("q", "quit", "Beenden"),
+        Binding("n", "new_book", t("tui.welcome.binding_new")),
+        Binding("o", "open_library", t("tui.welcome.binding_library")),
+        Binding("e", "open_settings", t("tui.welcome.binding_settings")),
+        Binding("q", "quit", t("tui.welcome.binding_quit")),
     ]
 
     def compose(self) -> ComposeResult:
@@ -23,26 +25,28 @@ class WelcomeScreen(Screen):
         with Center():
             with Vertical(id="welcome-container"):
                 yield Static(
-                    r"""
-   ___
-  / _ )_______  __ ___  ______
- / _  / __/ _ \/ //_/ / / / __/
-/____/_/  \___/\___/\_//_/\__/
-
-        KI-Buchgenerator v1.0
-""",
+                    "[bold bright_blue]"
+                    + "\n".join(
+                        [
+                            "██████  ██████   ██████  ██   ██ ██    ██ ███████ ",
+                            "██   ██ ██   ██ ██    ██ ██  ██  ██    ██ ██      ",
+                            "██████  ██████  ██    ██ █████   ██    ██ ███████ ",
+                            "██   ██ ██   ██ ██    ██ ██  ██  ██    ██      ██ ",
+                            "██████  ██   ██  ██████  ██   ██  ██████  ███████ ",
+                        ]
+                    )
+                    + "[/bold bright_blue]",
                     id="welcome-ascii",
                 )
                 yield Static(
-                    "Erstelle komplette Romane mit KI-Unterstützung – "
-                    "direkt im Terminal.",
+                    t("tui.welcome.subtitle_long"),
                     id="welcome-subtitle",
                 )
                 with Container(id="welcome-buttons"):
-                    yield Button("📖 Neues Buch", id="btn-new", variant="primary")
-                    yield Button("📚 Bibliothek öffnen", id="btn-library")
-                    yield Button("⚙️ Einstellungen", id="btn-settings")
-                    yield Button("❓ Hilfe", id="btn-help")
+                    yield Button(t("tui.welcome.btn_new"), id="btn-new", variant="primary")
+                    yield Button(t("tui.welcome.btn_library"), id="btn-library")
+                    yield Button(t("tui.welcome.btn_settings"), id="btn-settings")
+                    yield Button(t("tui.welcome.btn_help"), id="btn-help")
 
         yield Footer()
 
@@ -64,4 +68,7 @@ class WelcomeScreen(Screen):
         elif button_id == "btn-settings":
             self.action_open_settings()
         elif button_id == "btn-help":
-            self.notify("brokus v1.0 – Nutze [N] für neues Buch, [O] für Bibliothek.", title="Hilfe")
+            self.notify(
+                t("tui.welcome.help_notify_msg"),
+                title=t("tui.welcome.help_notify_title"),
+            )
