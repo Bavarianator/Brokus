@@ -1,54 +1,126 @@
-# brokus – AI-Powered Book Generator
-
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Python](https://img.shields.io/badge/python-3.10+-green)
-![License](https://img.shields.io/badge/license-MIT-purple)
-
-**Create complete novels with AI support – right in your terminal.**
-
-brokus is an intelligent book generator that transforms your ideas into full-length novels through a sophisticated three-layer system: **DNA extraction**, **structured generation**, and **compliance auditing**.
+<div align="center">
+  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/python-3.10+-green?style=flat-square" alt="Python">
+  <img src="https://img.shields.io/badge/license-MIT-purple?style=flat-square" alt="License">
+  <br>
+  <pre>
+██████  ██████   ██████  ██   ██ ██    ██ ███████
+██   ██ ██   ██ ██    ██ ██  ██  ██    ██ ██
+██████  ██████  ██    ██ █████   ██    ██ ███████
+██   ██ ██   ██ ██    ██ ██  ██  ██    ██      ██
+██████  ██   ██  ██████  ██   ██  ██████  ███████
+  </pre>
+  <p><strong>KI-gestützter Buch-Generator – erstelle komplette Romane im Terminal.</strong></p>
+  <p><em>Three-layer AI architecture · 33+ providers · 33 genres · 6 languages · 6 export formats</em></p>
+</div>
 
 ---
 
-## 🚀 Features
+<br>
 
-### 📖 Intelligent Book Generation
-- **DNA System**: Before writing a single word, brokus extracts the immutable "book DNA" from your idea – protagonist, setting, mandatory plot elements, forbidden deviations, and tone. This DNA is embedded in every chapter prompt to prevent story drift.
-- **Three-Layer Architecture**:
-  1. **DNA Extraction** – Locks the core identity of your book
-  2. **Chapter Generation** – Writes chapters with DNA context
-  3. **Compliance Audit** – Validates each chapter against the DNA (0-100 score)
+**brokus** verwandelt deine Buchidee in einen vollständigen Roman – gesteuert durch ein innovatives **Drei-Schichten-System**: DNA-Extraktion, strukturierte Kapitel-Generierung und automatisierte Compliance-Prüfung.
 
-### 🤖 33+ AI Providers
-- **Cloud**: OpenAI, Anthropic (Claude), Google Gemini, DeepSeek, Groq, Mistral, Cohere, and more
-- **Local**: Ollama, LM Studio, LocalAI – fully offline generation
-- **Aggregators**: OpenRouter (200+ models with one key), GitHub Models, Hugging Face
-- **Custom endpoints**: Connect any OpenAI-compatible API (vLLM, TabbyAPI, LiteLLM Proxy)
+Schreibe deine Idee, wähle Genre und Länge, und brokus generiert Kapitel für Kapitel ein stimmiges Buch – mit automatischen Fallback-Modellen bei Rate-Limits und einem eingebauten Update-System.
 
-### 📚 33 Genres
-Each genre comes with specialized style hints:
-Fantasy, Horror, Science Fiction, Romance, Thriller, Mystery, Historical Fiction, Adventure, Dystopia, Young Adult, Literary Fiction, Paranormal, Erotica, Comedy, Drama, Action, Post-Apocalyptic, Steampunk, Cyberpunk, Urban Fantasy, Magical Realism, Military, Western, Gothic, Noir, Fairy Tale, Slice of Life, Superhero, Survival, Biography, Children's Book, Satire, Experimental
+---
 
-### 🌍 6 Languages
-Full UI translation: **English**, **Deutsch**, **Français**, **Español**, **Nederlands**, **Italiano**
+## 📦 Features
 
-### 📤 Export Options
-- **Markdown** (.md) – For editing and version control
-- **EPUB** (.epub) – For e-readers
-- **PDF** (.pdf) – For printing
-- **Word** (.docx) – For editors
-- **JSON** (.json) – For developers
-- **Plain Text** (.txt) – Universal compatibility
+### 🧬 DNA-System (Kern-Innovation)
+
+Bevor brokus ein einziges Wort schreibt, extrahiert es die **unveränderliche DNA** deiner Buchidee:
+
+| Schicht | Phase | Beschreibung |
+|---------|-------|--------------|
+| **1. Pre-Generation Lock** | DNA-Extraktion | Extrahiert Protagonist, Setting, Pflicht-Elemente, Tabus, Grundton – gespeichert als JSON |
+| **2. In-Generation Lock** | Jeder Kapitel-Prompt | DNA-Block wird in jeden Prompt eingebettet → kein thematischer Drift |
+| **3. Post-Generation Audit** | Compliance-Prüfung | Jedes Kapitel wird gegen die DNA validiert (Score 0–100). Unterhalb der Schwelle → Flag für Neugenerierung |
+
+### 🤖 Multi-Provider AI-Engine
+
+**33+ Provider**, einheitlich über eine Client-Abstraktion:
+
+<table>
+<tr><th>Cloud</th><th>Aggregatoren</th><th>Lokal</th><th>Custom</th></tr>
+<tr><td>
+OpenAI · Anthropic (Claude)<br>
+Google Gemini · DeepSeek<br>
+Mistral AI · Groq (⚡500+ t/s)<br>
+Cerebras · xAI (Grok)<br>
+Cohere · AI21 · Perplexity<br>
+Novita · DeepInfra · Together<br>
+Fireworks · SambaNova<br>
+NVIDIA NIM · Replicate<br>
+Anyscale · Reka · Writer<br>
+Moonshot (Kimi) · Zhipu (GLM)
+</td><td>
+<b>OpenRouter</b> – 200+ Modelle mit einem Key<br>
+<b>GitHub Models</b> – Kostenlos (Rate-Limits)<br>
+<b>Hugging Face</b> – Open-Source-Modelle<br>
+<b>Ollama Cloud</b> – Hosted
+</td><td>
+<b>Ollama</b> – Komplett offline, GPU nötig<br>
+<b>LM Studio</b> – GUI, OpenAI-kompatibel<br>
+<b>LocalAI</b> – Docker-basiert
+</td><td>
+<b>OpenAI-kompatibel</b> – Jeder API-Endpoint<br>
+(vLLM, TabbyAPI, LiteLLM Proxy, …)
+</td></tr>
+</table>
+
+### 📚 33 Genres mit spezialisierten Style-Hints
+
+Fantasy · Horror · Science Fiction · Romance · Thriller · Mystery · Historical Fiction · Adventure · Dystopia · Young Adult · Literary Fiction · Paranormal · Erotica · Comedy · Drama · Action · Post-Apocalyptic · Steampunk · Cyberpunk · Urban Fantasy · Magical Realism · Military · Western · Gothic · Noir · Fairy Tale · Slice of Life · Superhero · Survival · Biography · Children's Book · Satire · Experimental
+
+### 🌍 6 Sprachen (UI & Generation)
+
+| Sprache | Code | Übersetzung |
+|---------|------|-------------|
+| Deutsch | `de` | Vollständig |
+| English | `en` | Vollständig |
+| Français | `fr` | Vollständig |
+| Español | `es` | Vollständig |
+| Nederlands | `nl` | Vollständig |
+| Italiano | `it` | Vollständig |
+
+### 📤 Export-Formate
+
+| Format | Tool | Anwendung |
+|--------|------|-----------|
+| **Markdown** (`.md`) | nativ | Bearbeitung, Versionierung |
+| **EPUB** (`.epub`) | `ebooklib` | E-Reader (Kindle, Tolino) |
+| **PDF** (`.pdf`) | `weasyprint` | Druck, Weitergabe |
+| **Word** (`.docx`) | nativ (ZIP/XML) | Lektorat, Verlage |
+| **JSON** (`.json`) | nativ | Entwicklung, API |
+| **Plain Text** (`.txt`) | nativ | Universell |
 
 ### 🔐 Security
-- API keys are **encrypted** and stored in `secrets.enc`
-- Optional **master passphrase** adds a password layer protection
 
-### 💾 Project Management
-- All books saved in a local SQLite database
-- Backup before every generation (configurable)
-- Library view with status tracking and word counts
-- Pause/Resume generation at any time
+- API-Keys werden **verschlüsselt** in `secrets.enc` gespeichert (maschinen-gebundener Schlüssel)
+- Optionale **Master-Passphrase** für zusätzlichen Password-Schutz
+- Re-Encryption bei Passphrase-Rotation
+
+### 🛡️ Moderation & Fallback
+
+- **ModerationError**: Bei 403-Moderation (z.B. OpenRouter/OpenInference) → sofortiger Abbruch, kein sinnloser Fallback
+- **Rate-Limit-Fallback**: Modelle in einer konfigurierbaren Chain, kein Self-Fallback (dedupliziert)
+- **Automatische Retry**: Mit Backoff, konfigurierbar
+
+### 🔄 Update-System
+
+- **Startup-Check**: Leise Prüfung beim Programmstart (5s Timeout, nur sichtbar bei Update)
+- **Manueller Check**: Einstellungen → Erweitert → "🔄 Update suchen & installieren"
+- **Installation**: Automatisch via `git pull` + `pip install -e .`
+- **Versionserkennung**: Semver und Non-Semver-Tags (z.B. `ai`)
+- **Quelle**: GitHub Releases API (mit Fallback auf Tags-API)
+
+### 📊 Projekt-Management
+
+- Alle Bücher in einer lokalen SQLite-Datenbank (`data/projects.db`)
+- Automatische Backups vor jeder Generierung
+- Bibliothek mit Status-Tracking, Wortzahlen, Compliance-Scores
+- Pause/Resume auf Pipeline-Ebene (Kapitel-Ebene)
+- Export mit Format-Auswahl nach der Generierung
 
 ---
 
@@ -57,255 +129,290 @@ Full UI translation: **English**, **Deutsch**, **Français**, **Español**, **Ne
 ### Installation
 
 ```bash
-# Clone the repository
+# Repository klonen
 git clone https://github.com/Bavarianator/Brokus.git
 cd brokus
 
-# Install dependencies
+# Dependencies installieren
 pip install -e .
 
-# Run brokus
+# Starten
 brokus
 ```
 
-### First-Time Setup
+```bash
+# Oder direkt via python -m
+python -m brokus
+```
 
-On first launch, brokus runs an interactive **Setup Wizard**:
-1. Choose your language
-2. Select an AI provider
-3. Pick a model
-4. Enter your API key
-5. (Optional) Set a master passphrase
+### First-Run Wizard
 
-That's it – start creating books!
+Beim ersten Start führt brokus durch einen interaktiven **Setup-Assistenten**:
+
+1. **Sprache wählen** – Deutsch, English, Français, Español, Nederlands, Italiano
+2. **KI-Provider wählen** – OpenRouter, OpenAI, Anthropic, Ollama, … (33+)
+3. **Modell wählen** – Live-Discovery vom API-Endpoint
+4. **API-Key eingeben** – Wird verschlüsselt gespeichert
+5. **(Optional) Master-Passphrase** – Zusätzlicher Schutz für Keys
+
+> **Tipp**: Mit **OpenRouter** hast du mit einem einzigen API-Key Zugriff auf 200+ Modelle – ideal zum Ausprobieren verschiedener Modelle.
 
 ---
 
-## 📖 Usage Modes
+## 📖 Nutzungsmodi
 
-### ⚡ Quick Book (3 steps)
+### ⚡ Schnell-Buch (3 Schritte)
+
 ```
-Idee eingeben → Titel wählen → Genre auswählen → Generieren!
+Idee eingeben → Titel + Genre wählen → Länge festlegen → Generieren!
 ```
-Perfect for rapid prototyping and getting a first draft quickly.
 
-### ✨ Masterpiece Mode
-Full configuration control:
-- Target audience (Children, Young Adult, Adult, Mature)
-- Narrative perspective (First person, Third person limited, Omniscient)
-- Tense (Present, Past)
-- Chapter count (5-50)
-- Words per chapter (1,500-3,000)
-- Story pace (Slow atmosphere, Balanced, Fast twists)
-- Detail level (Loose → Strict fidelity to idea)
+Optimiert für schnelle Ergebnisse: Idee eintippen, Genre wählen, Länge bestimmen – los geht's.
 
-### 📖 Library
-Browse all saved projects, read chapters, regenerate content, edit manually, and export in multiple formats.
+### ✨ Meisterwerk (11 Schritte)
+
+Vollständige Kontrolle über alle Parameter:
+
+| Schritt | Parameter | Optionen |
+|---------|-----------|----------|
+| 1 | Buchidee | Freitext |
+| 2 | Titel | Freitext |
+| 3 | Genre | 33 Genres |
+| 4 | Zielgruppe | Kinder · Jugendliche · Young Adult · Erwachsene |
+| 5 | Sprache | 12 Sprachen |
+| 6 | KI-Modell | Aus gewähltem Provider |
+| 7 | Erzählperspektive | Ich-Perspektive, Dritte Person (personal/auktorial), Briefroman, … |
+| 8 | Stimmung & Ton | Düster · Spannend · Warmherzig · Humorvoll · Episch |
+| 9 | Buchlänge | Minigeschichte (1.500 W.) bis Megaroman (150.000 W.) |
+| 10 | Wichtige Infos | Pflicht-Elemente, Fakten, Orte |
+| 11 | Detailgrad | Lockers · Standard · Detailiert · Streng |
+
+### 📖 Bibliothek
+
+- Alle gespeicherten Projekte als Tabelle mit Status, Wortzahl, Fortschritt
+- Kapitel lesen und navigieren (nächstes/vorheriges)
+- Status: ✅ abgeschlossen · ⏳ in Generierung · ❌ fehlgeschlagen · 📝 Entwurf
 
 ---
 
-## 🎛️ Configuration
+## 🏗️ Architektur
 
-All settings are in `config/settings.yaml`:
+```
+brokus/
+├── ai/                # Multi-Provider AI-Client, Modelle, Schemata, Discovery
+│   ├── client.py      #   Abstraktionsschicht (OpenAI, Anthropic, Ollama, …)
+│   ├── model_discovery.py  # Live-Modell-Liste vom API-Endpoint
+│   ├── prompts.py     #   Prompt-Loader (aus config/prompts.yaml)
+│   ├── schemas.py     #   Pydantic-Modelle für strukturierte Outputs
+│   └── models.py      #   Provider-Registry
+├── core/              # Pipeline, DNA-Extraktion, Validierung, Tracker
+│   ├── dna_extractor.py  # Layer 1: DNA-Extraktion (Pre-Generation Lock)
+│   ├── pipeline.py    #   Orchestrierung: DNA → Synopsis → Charaktere → Plan → Kapitel
+│   ├── validator.py   #   Layer 3: Compliance-Audit (Post-Generation)
+│   ├── extractor.py   #   Kernelement-Extraktion (Charaktere, Setting, …)
+│   ├── context.py     #   Kontext-Management für Kapitel-Prompts
+│   └── tracker.py     #   Compliance-Tracker mit Score-Berechnung
+├── storage/           # Datenbank, Exporter
+│   ├── database.py    #   Async SQLite (aiosqlite)
+│   └── exporter.py    #   Multi-Format Export (MD, EPUB, PDF, DOCX, JSON, TXT)
+├── tui/               # Terminal User Interface
+│   └── app_simple.py  #   Rich-basierte CLI (Panels, Tabellen, Farben)
+├── utils/             # Hilfsmodule
+│   ├── i18n.py        #   Internationalisierung (6 Sprachen, 460+ Keys)
+│   ├── crypto.py      #   AES-256-Verschlüsselung für API-Keys
+│   ├── updater.py     #   GitHub-basiertes Update-System
+│   ├── settings_loader.py  # YAML-Konfiguration laden/speichern
+│   ├── opener.py      #   System-Dokumenten-Reader
+│   ├── logger.py      #   Strukturiertes Logging
+│   ├── tokens.py      #   Token-Zählung
+├── config/            # YAML-Konfiguration
+│   ├── settings.yaml  #   Hauptkonfiguration (Provider, AI, Generation, UI)
+│   ├── prompts.yaml   #   System-Prompts für alle Pipeline-Stages
+│   └── genres.yaml    #   Genre-Definitionen + Style-Hints
+├── data/              # Laufzeitdaten
+│   ├── projects.db    #   SQLite-Datenbank
+│   ├── i18n/          #   Übersetzungsdateien (6 Sprachen, 460+ Keys)
+│   ├── books/         #   Exportierte Bücher
+│   └── backups/       #   Automatische DB-Backups
+└── bin/brokus         # Shell-Wrapper
+```
+
+### Pipeline-Ablauf
+
+```
+Buchidee
+    │
+    ▼
+┌─────────────────┐
+│  DNA-Extraktion  │  ← Protagonist, Setting, Pflicht-Elemente, Tabus, Ton
+│  (Layer 1)       │
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Kernelemente    │  ← Charaktere, Handlungsbögen, Weltendetails
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Synopsis        │  ← Gesamtstruktur der Handlung
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Charaktere      │  ← Detaillierte Figurenbeschreibungen
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Kapitelplan     │  ← Kapitel-für-Kapitel Struktur
+└────────┬────────┘
+         ▼
+  ┌──────┴──────┐
+  ▼             ▼
+Kapitel 1   Kapitel 2  …  Kapitel N
+  │             │
+  ▼             ▼
+┌─────────────────────────┐
+│  Compliance-Prüfung      │  ← Layer 3: Score 0–100 gegen DNA
+│  (Layer 3)               │
+└─────────────────────────┘
+```
+
+### Fallback-Strategie
+
+Jede Pipeline-Stage hat eine eigene Modell-Chain. Fällt ein Modell aus (Rate-Limit, Timeout), wird automatisch das nächste in der Chain probiert. Bei **Moderation (403)** bricht der gesamte Vorgang sofort ab – kein sinnloser Fallback auf andere Modelle.
+
+```
+Pipeline-Stage → model_A:free → model_B:free → model_C:free → … → Fallback-Text
+                                ↑
+                     Rate-Limit → nächstes Modell
+                     403/Auth   → sofortiger Abbruch (ModerationError)
+```
+
+---
+
+## 🎛️ Konfiguration
+
+### Zentrale YAML: `config/settings.yaml`
 
 ```yaml
 ai:
-  provider: anthropic
-  model: claude-sonnet-4-5
+  provider: anthropic           # Standard-Provider
+  model: claude-sonnet-4-5      # Standard-Modell
   temperature: 0.7
   max_tokens: 4000
   max_retries: 3
-  request_timeout: 300
+  fallback_models: []           # Komma-getrennte Fallback-Liste
 
 generation:
   default_chapters: 20
-  default_genre: drama
-  compliance_threshold: 80
-  auto_export: false
+  compliance_threshold: 80      # 0–100: Unter diesem Score wird geflagged
+  detail_level: standard        # loose, standard, detailed, strict
+  story_pace: balanced          # slow, balanced, fast
+  chapter_delay: 2.0            # Sekunden zwischen Kapiteln (Rate-Limit-Schutz)
   export_formats: [md, epub]
-  detail_level: standard
-  story_pace: balanced
-  chapter_delay: 2.0
-  max_chapter_words: 3000
-  min_chapter_words: 1500
+  backup_enabled: true
 
 advanced:
   cache_responses: true
   max_cache_size_mb: 500
-  parallel_chapters: 1
-
-providers:
-  # 33+ providers pre-configured
-  # Add your own custom endpoints
+  request_timeout: 300
+  use_extended_thinking: false  # Für Reasoning-Modelle
 ```
 
-### Environment Variables
+### CLI-Override: `~/.config/brokus/cli_settings.json`
+
+Überschreibt ausgewählte Werte aus der settings.yaml – z.B. für OpenRouter-spezifische Modelle:
+
+```json
+{
+  "model": "openai/gpt-oss-120b:free",
+  "fallback_models_str": "meta-llama/llama-3.3-70b-instruct:free, google/gemini-2.0-flash-exp:free"
+}
+```
+
+### Environment-Variablen
 
 ```bash
-# API Keys (set before running brokus)
-export ANTHROPIC_API_KEY="sk-..."
+# API-Keys (per Provider – siehe config/settings.yaml)
+export OPENROUTER_API_KEY="sk-or-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
 export OPENAI_API_KEY="sk-..."
 
-# Optional: Master passphrase for the session
+# Master-Passphrase (optional – für verschlüsselte Secrets)
 export BROKUS_MASTER_PASSWORD="your-secure-passphrase"
+
+# Editor für YAML-Bearbeitung (optional)
+export EDITOR="code --wait"
 ```
 
 ---
 
-## 🏗️ Architecture
+## 🛠️ Entwicklung
 
-```
-brokus/
-├── ai/              # AI client, models, schemas, model discovery
-├── core/            # DNA extraction, pipeline orchestration, validation, tracker
-├── storage/         # Database, exporter (MD, EPUB, PDF, DOCX, JSON, TXT)
-├── tui/             # Terminal UI (simple CLI + prompt_toolkit advanced)
-├── utils/           # Logger, crypto, settings loader, i18n
-├── config/          # Settings, prompts, genre definitions
-├── data/            # SQLite database, exports, backups, i18n translations
-└── __main__.py      # CLI entry point (argparse)
-```
+### Skripte
 
-**Core Modules:**
-- `ai/client.py` – Multi-provider AI abstraction (OpenAI, Anthropic, Ollama, etc.)
-- `core/dna_extractor.py` – Layer 1: Pre-Generation Lock (DNA extraction)
-- `core/pipeline.py` – Orchestrates: DNA → Synopsis → Characters → Chapter Plan → Chapters
-- `core/validator.py` – Layer 3: Post-Generation Compliance Audit
-- `storage/exporter.py` – Multi-format export (Markdown, EPUB, PDF, DOCX, JSON, TXT)
-
-### The DNA System (Innovation)
-
-The core innovation is the **three-layer compliance system**:
-
-1. **Pre-Generation Lock (DNA Extraction)**
-   - Analyzes your book idea
-   - Extracts: protagonist details, setting, mandatory elements, forbidden deviations, themes, tone
-   - Stored as immutable JSON
-
-2. **In-Generation Lock (DNA in Every Prompt)**
-   - Every chapter prompt includes the full DNA block
-   - AI is constantly reminded of the book identity
-   - Prevents gradual drift away from the original concept
-
-3. **Post-Generation Audit (Compliance Check)**
-   - Each chapter is validated against the DNA
-   - Score 0-100: does it follow the protagonist age? setting? mandatory elements?
-   - Below threshold? Chapter is flagged for regeneration
-
----
-
-## 🛠️ Development
-
-### Run Tests
 ```bash
-# Check i18n completeness
+# i18n-Completeness prüfen (alle Keys in allen 6 Sprachen?)
 python scripts/check_i18n.py
 
-# Validate git safety
+# Git-Safety-Check (keine uncommitteten Secrets?)
 python scripts/check_git_safety.py
 
-# Add YAML labels
+# YAML-Labels zu Übersetzungen hinzufügen
 python scripts/add_yaml_labels.py
 ```
 
-### Add a New Provider
+### Projekt-Struktur verstehen
 
-1. Add provider config to `config/settings.yaml` under `providers:`
-2. Add translation keys to all 6 language files
-3. Implement client in `brokus/ai/client.py`
+- **Neuen Provider hinzufügen**: Eintrag in `config/settings.yaml` unter `providers:` + Übersetzungs-Keys in allen 6 i18n-Dateien
+- **Neuen Prompt ändern**: `config/prompts.yaml` – System-Prompts für jede Pipeline-Stage
+- **Neues Genre hinzufügen**: `config/genres.yaml` + Eintrag in `GENRES`-Liste in `app_simple.py`
+- **Übersetzung hinzufügen**: Key in allen 6 `data/i18n/*.json`-Dateien
 
----
-
-## 📋 Requirements
+### Anforderungen
 
 - Python 3.10+
-- Terminal with ANSI color support
-- API key for your chosen AI provider (or local model)
+- Terminal mit ANSI-Color-Unterstützung
+- API-Key für den gewählten Provider (oder lokales Modell)
 
-### Python Dependencies
-
-```
-rich>=13.0.0
-prompt-toolkit>=3.0.0
-pyyaml>=6.0
-openai>=1.0.0
-anthropic>=0.25.0
-ollama>=0.1.0
-ebooklib>=0.18
-weasyprint>=60.0
-markdown>=3.5.0
-tiktoken>=0.5.0
-aiosqlite>=0.19.0
-pydantic>=2.0.0
-groq>=0.8.0
-google-generativeai>=0.8.0
-cohere>=5.0.0
-mistralai>=0.4.0
-aiohttp>=3.9.0
-```
-
----
-
-## 🎨 Screenshots
+### Python-Dependencies
 
 ```
-╔══════════════════════════════════════════════════════════╗
-║                     🏠 BROKUS                            ║
-║          AI-powered book generator                       ║
-╠══════════════════════════════════════════════════════════╣
-║                                                          ║
-║    ⚡  Quick book – enter an idea and go!                ║
-║                                                          ║
-║    ✨  Masterpiece – configure every detail              ║
-║                                                          ║
-║    📖  Library – read saved books                        ║
-║                                                          ║
-║    ⚙️   Settings – API key, model, export                ║
-║                                                          ║
-║    🚪  Quit                                              ║
-║                                                          ║
-╚══════════════════════════════════════════════════════════╝
+rich>=13.0.0            # Terminal-UI (Panels, Tabellen, Farben)
+pyyaml>=6.0             # YAML-Konfiguration
+openai>=1.0.0           # OpenAI-kompatible Provider (OpenRouter, Groq, DeepSeek, …)
+anthropic>=0.25.0       # Anthropic Claude
+ollama>=0.1.0           # Lokale Modelle
+ebooklib>=0.18          # EPUB-Export
+weasyprint>=60.0        # PDF-Export
+markdown>=3.5.0         # Markdown → HTML (für EPUB/PDF)
+tiktoken>=0.5.0         # Token-Zählung
+aiosqlite>=0.19.0       # Async SQLite
+pydantic>=2.0.0         # Datenvalidierung
+groq>=0.8.0             # Groq-API
+google-generativeai>=0.8.0  # Google Gemini
+cohere>=5.0.0           # Cohere-API
+mistralai>=0.4.0        # Mistral AI
+aiohttp>=3.9.0          # Async HTTP
 ```
 
 ---
 
-## 📄 License
+## ❓ Fehlerbehebung
 
-MIT License – see [LICENSE](LICENSE) for details.
-
----
-
-## 🙏 Acknowledgments
-
-- **Anthropic** – Claude API
-- **OpenAI** – GPT models
-- **Ollama** – Local AI infrastructure
-- **prompt_toolkit** – Terminal UI framework
-- **Rich** – Beautiful terminal output
+| Problem | Lösung |
+|---------|--------|
+| **Module not found** | `pip install -e .` (oder ggf. `uv pip install -e .`) |
+| **API-Key funktioniert nicht** | Provider in Einstellungen prüfen → API-Key neu eingeben (`BROKUS_MASTER_PASSWORD` gesetzt?) |
+| **403 Moderation-Fehler** | OpenAI-Modelle auf OpenRouter blockieren manche Inhalte → zu nicht-OpenAI-Modellen wechseln (z.B. `meta-llama/llama-3.3-70b-instruct:free`) |
+| **Generation zu langsam** | Cache in Einstellungen aktivieren · Lokales Modell verwenden (Ollama) · Fallback-Modelle konfigurieren |
+| **Kapitel weichen von der Idee ab** | Compliance-Schwelle auf 90+ erhöhen · `detail_level` auf `strict` stellen · DNA-Extraktion prüfen |
+| **Endlosschleife bei Fallback** | Modell in `fallback_models_str` identisch mit Default-Modell → Einstellungen prüfen, Duplikat entfernen |
+| **Update schlägt fehl** | Git-Repository vorhanden? → `git status` prüfen · `pip install -e .` manuell ausführen |
 
 ---
 
-## 🐛 Troubleshooting
+## 📄 Lizenz
 
-**Q: "Module not found" errors**
-```bash
-pip install -e .
-```
-
-**Q: API key not working**
-- Check environment variable name matches provider
-- Verify key has not expired
-- Try setting key directly in settings UI
-
-**Q: Generation is slow**
-- Enable cache in settings (caches AI responses)
-- Use local models (Ollama, LM Studio) for offline speed
-- Increase `max_retries` for rate limit handling
-
-**Q: Chapters don't follow my idea**
-- Increase `compliance_threshold` to 90+
-- Check the DNA extraction output in logs
-- Regenerate with specific chapter
+MIT License – siehe [LICENSE](LICENSE) für Details.
 
 ---
 
