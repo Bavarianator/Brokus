@@ -21,6 +21,13 @@ brokus/core/extractor.py
 brokus/core/pipeline.py
 brokus/core/tracker.py
 brokus/core/validator.py
+brokus/core/cloud/__init__.py
+brokus/core/cloud/base.py
+brokus/core/cloud/gdrive.py
+brokus/core/cloud/manager.py
+brokus/core/cloud/nextcloud.py
+brokus/core/cloud/oauth.py
+brokus/core/cloud/rclone.py
 brokus/storage/__init__.py
 brokus/storage/database.py
 brokus/storage/exporter.py
@@ -40,3 +47,4 @@ brokus/utils/updater.py
 scripts/add_yaml_labels.py
 scripts/check_git_safety.py
 scripts/check_i18n.py
+scripts/test_mammouth_api.py

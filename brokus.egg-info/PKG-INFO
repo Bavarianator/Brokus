@@ -25,7 +25,7 @@ Requires-Dist: mistralai>=0.4.0
 Requires-Dist: aiohttp>=3.9.0
 
 <div align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.2.-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/python-3.10+-green?style=flat-square" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-purple?style=flat-square" alt="License">
   <br>
@@ -37,7 +37,7 @@ Requires-Dist: aiohttp>=3.9.0
 ██████  ██   ██  ██████  ██   ██  ██████  ███████
   </pre>
   <p><strong>AI-powered book generator – create complete novels in your terminal.</strong></p>
-  <p><em>Three-layer AI architecture · 33+ providers · 33 genres · 6 languages · 6 export formats</em></p>
+  <p><em>Three-layer AI architecture · 33+ providers · 33 genres · 6 languages · 6 export formats · 10+ CLI commands</em></p>
 </div>
 
 ---
@@ -78,7 +78,8 @@ Novita · DeepInfra · Together<br>
 Fireworks · SambaNova<br>
 NVIDIA NIM · Replicate<br>
 Anyscale · Reka · Writer<br>
-Moonshot (Kimi) · Zhipu (GLM)
+Moonshot (Kimi) · Zhipu (GLM)<br>
+<b>Mammouth AI</b> – Top-Modelle<br>
 </td><td>
 <b>OpenRouter</b> – 200+ models with one key<br>
 <b>GitHub Models</b> – Free (rate-limited)<br>
@@ -113,14 +114,16 @@ Fantasy · Horror · Science Fiction · Romance · Thriller · Mystery · Histor
 
 ### 🌍 6 Languages (UI & Generation)
 
-| Language | Code | Translation |
-|----------|------|-------------|
-| Deutsch | `de` | Complete |
-| English | `en` | Complete |
-| Français | `fr` | Complete |
-| Español | `es` | Complete |
-| Nederlands | `nl` | Complete |
-| Italiano | `it` | Complete |
+| Language | Code | Translation Status |
+|----------|------|-------------------|
+| Deutsch | `de` | ✅ Complete (244 keys) |
+| English | `en` | ✅ Complete (244 keys) |
+| Français | `fr` | ✅ Complete (244 keys) |
+| Español | `es` | ✅ Complete (244 keys) |
+| Nederlands | `nl` | ✅ Complete (244 keys) |
+| Italiano | `it` | ✅ Complete (244 keys) |
+
+All 6 language files are kept **fully in sync** – unused keys are automatically cleaned up to maintain consistency.
 
 ### 📤 Export Formats
 
@@ -133,9 +136,68 @@ Fantasy · Horror · Science Fiction · Romance · Thriller · Mystery · Histor
 | **JSON** (`.json`) | native | Development, API |
 | **Plain Text** (`.txt`) | native | Universal |
 
+### ☁ Cloud-Upload
+
+Upload finished books directly from the terminal – **three methods**:
+
+| Method | Effort | Providers |
+|---------|--------------|----------|
+| **Nextcloud v2** ⭐ | 🔵 30s – Just URL + Browser login | Nextcloud (WebDAV) |
+| **Google Drive** | 🟡 5min – Client ID + Secret (one-time) | Google Drive API |
+| **rclone** | 🟢 One-time – `rclone config` + 40+ providers | GDrive, OneDrive, S3, Dropbox, … |
+
+#### 🔵 Nextcloud – Login Flow v2 (empfohlen)
+
+Browser-based app-password generation (Nextcloud built-in, no Keycloak required):
+
+```
+Setup:  URL eingeben → Browser öffnet sich → Einloggen + Erlauben ✅
+Upload: WebDAV + automatischer Share-Link
+```
+
+Alternativ: App-Password manuell (Nextcloud → Einstellungen → Sicherheit)
+
+#### 🟡 Google Drive – Einfacher OAuth Flow
+
+Leichtgewichtig (kein `google-api-python-client`):
+
+```
+Setup:  Client ID + Secret eingeben → Browser öffnet sich → Erlauben ✅
+Upload: Google Drive REST API + `webViewLink`
+```
+
+> One-time setup at Google Cloud Console: Create project → Enable Drive API → OAuth 2.0 Desktop credentials
+
+#### 🟢 rclone – Universell (40+ Anbieter)
+
+Systemweites Tool, kein brokus-internes Auth:
+
+```
+Setup:  rclone installieren + `rclone config` → Remote auswählen ✅
+Upload: `rclone copy` → GDrive, OneDrive, S3, Dropbox, Nextcloud, …
+```
+
+```bash
+# Installation (auto-installed by install.sh / bin/brokus)
+brew install rclone    # macOS
+apt install rclone    # Debian/Ubuntu
+```
+
+> **Auto-Install**: `install.sh` and `bin/brokus` detect missing rclone and offer to install it automatically using your system package manager (brew/apt/pacman/dnf).
+
+#### Gemeinsame Features
+
+- **Auto-upload** after export (optional)
+- **Auto-folder creation** on the remote
+- **Share-link generation** (Nextcloud OCS / Google Drive `webViewLink`)
+- **CLI flags**: `--cloud-setup`, `--cloud-status`, `--no-cloud`
+- **Encrypted credentials**: Nextcloud + GDrive creds in `secrets.enc` (AES-256-GCM); rclone nutzt eigene Config
+- **Batch upload**: Single book → all configured providers
+
 ### 🔐 Security
 
 - API keys are **encrypted** and stored in `secrets.enc` (machine-bound key)
+- Cloud credentials are stored **inside the same encrypted file** as API keys
 - Optional **master passphrase** for additional password protection
 - Re-encryption on passphrase rotation
 
@@ -154,6 +216,19 @@ Fantasy · Horror · Science Fiction · Romance · Thriller · Mystery · Histor
 - **PEP 668 support**: Automatic `--break-system-packages` fallback on Arch Linux
 - **Source**: GitHub Releases API (with Tags API fallback)
 
+### 🛡️ Fallback Chain Control
+
+Brokus uses **fallback model chains** per pipeline stage to handle rate limits and timeouts. You can control this behavior:
+
+| Setting | Effect |
+|---------|--------|
+| **Enabled** (default) | Each stage tries models from its chain on failure (rate-limit → next model) |
+| **Disabled** | Only the configured primary model is used – no hardcoded fallbacks |
+
+Configure via: `Settings → Generation → [9] Fallback-Ketten deaktivieren`
+
+> Useful when you want predictable costs, or when using local models that never hit rate limits.
+
 ### 📊 Project Management
 
 - All books in a local SQLite database (`data/projects.db`)
@@ -167,6 +242,22 @@ Fantasy · Horror · Science Fiction · Romance · Thriller · Mystery · Histor
 - `bin/brokus` auto-installs dependencies, creates a symlink, and adds `~/.local/bin` to PATH on first run
 - No package manager, no `pip install` needed – just `./bin/brokus`
 - Also ships `install.sh` as a convenience wrapper for traditional setups
+
+### ⌨️ CLI Command Reference
+
+| Command | Description |
+|---------|-------------|
+| `brokus` | Interactive mode – main menu with all options |
+| `brokus --version` | Show version and exit |
+| `brokus --tui` | (Legacy) Textual TUI mode |
+| `brokus --set-master-password` | Set / rotate master passphrase |
+| `brokus --cloud-setup` | Directly open cloud upload configuration wizard |
+| `brokus --cloud-status` | Show connection status of all configured cloud providers |
+| `BROKUS_NO_CLOUD=1 brokus` | Disable cloud upload prompts for this session |
+| `python -m brokus` | Run without installation |
+| `./bin/brokus` | Auto-installing wrapper – installs deps + creates symlink on first run |
+| `./install.sh --uninstall` | Remove symlink and clean up |
+| `BROKUS_MASTER_PASSWORD="..." brokus` | Use master passphrase from environment |
 
 ---
 
@@ -281,6 +372,13 @@ brokus/
 │   ├── schemas.py     #   Pydantic models for structured outputs
 │   └── models.py      #   Provider registry
 ├── core/              # Pipeline, DNA extraction, validation, tracker
+│   ├── cloud/         #   ☁ Cloud-Upload (Nextcloud, Google Drive, rclone)
+│   │   ├── base.py        #   ABC + UploadResult dataclass
+│   │   ├── nextcloud.py   #   WebDAV + Login Flow v2 + OCS Share API
+│   │   ├── gdrive.py      #   Google Drive OAuth 2.0 (REST API)
+│   │   ├── rclone.py      #   rclone subprocess wrapper (40+ Anbieter)
+│   │   ├── oauth.py       #   Keycloak OAuth2 helper
+│   │   └── manager.py     #   Config, orchestration, setup wizard
 │   ├── dna_extractor.py  # Layer 1: DNA extraction (Pre-Generation Lock)
 │   ├── pipeline.py    #   Orchestration: DNA → Synopsis → Characters → Plan → Chapters
 │   ├── validator.py   #   Layer 3: Compliance audit (Post-Generation)
@@ -293,7 +391,7 @@ brokus/
 ├── tui/               # Terminal User Interface
 │   └── app_simple.py  #   Rich-based CLI (panels, tables, colors)
 ├── utils/             # Utility modules
-│   ├── i18n.py        #   Internationalization (6 languages, 460+ keys)
+│   ├── i18n.py        #   Internationalization (6 languages, 244 keys)
 │   ├── crypto.py      #   AES-256 encryption for API keys
 │   ├── updater.py     #   GitHub-based update system
 │   ├── settings_loader.py  # YAML configuration load/save
@@ -306,7 +404,7 @@ brokus/
 │   └── genres.yaml    #   Genre definitions + style hints
 ├── data/              # Runtime data
 │   ├── projects.db    #   SQLite database
-│   ├── i18n/          #   Translation files (6 languages, 460+ keys)
+│   ├── i18n/          #   Translation files (6 languages, 244 keys each)
 │   ├── books/         #   Exported books (created at runtime)
 │   └── backups/       #   Automatic DB backups (created at runtime)
 ├── bin/
@@ -413,6 +511,7 @@ Overrides selected values from settings.yaml – useful for OpenRouter-specific 
 export OPENROUTER_API_KEY="sk-or-..."
 export ANTHROPIC_API_KEY="sk-ant-..."
 export OPENAI_API_KEY="sk-..."
+export MAMMOUTH_API_KEY="sk-..."
 
 # Master passphrase (optional – for encrypted secrets)
 export BROKUS_MASTER_PASSWORD="your-secure-passphrase"
@@ -473,7 +572,15 @@ google-generativeai>=0.8.0  # Google Gemini
 cohere>=5.0.0           # Cohere API
 mistralai>=0.4.0        # Mistral AI
 aiohttp>=3.9.0          # Async HTTP
+
+# Cloud-Upload (optional)
+requests>=2.31.0          # Nextcloud (WebDAV) + Google Drive (REST API)
 ```
+
+> **Note**: Cloud upload needs only `requests` (always installed).
+> Google Drive no longer requires `google-api-python-client` – uses simple REST API calls.
+> rclone is external – auto-installed during `install.sh` / `bin/brokus` setup, or manually: `brew install rclone` / `apt install rclone`.
+> Cloud credentials are stored encrypted inside `secrets.enc` alongside API keys.
 
 ---
 
@@ -491,6 +598,12 @@ aiohttp>=3.9.0          # Async HTTP
 | **Update fails (PEP 668)** | Arch/Manjaro blocks system-wide `pip install` → `install.sh` uses `--break-system-packages` automatically. Manual: `pip install --break-system-packages -e .` |
 | **Update fails (general)** | Git repository present? → `git status` · `pip install -e .` manually |
 | **Update finds same release repeatedly** | Fixed: Version is now detected via `git describe --tags --abbrev=0`, not hardcoded |
+| **Cloud-Upload not offered** | Enable in Settings → Advanced → Cloud-Upload |
+| **Nextcloud connection fails** | Generate an app-password (Nextcloud → Settings → Security) – normal password won't work with WebDAV · Or use Login Flow v2 (browser-based, kein App-Passwort nötig) |
+| **Google Drive auth fails** | Create OAuth 2.0 Desktop credentials in Google Cloud Console → paste Client ID + Secret · Token is cached in `~/.brokus/gdrive_token.json` |
+| **Cloud credentials still ask** | Credentials are stored encrypted in `secrets.enc` – if you rotated the master passphrase, re-save the cloud config |
+| **rclone not found** | Install rclone: `brew install rclone` (macOS) / `apt install rclone` (Debian) / https://rclone.org/install/ |
+| **No rclone remotes listed** | Run `rclone config` to set up a remote (supports 40+ providers: GDrive, Nextcloud, OneDrive, S3, …)
 
 ---
 

@@ -327,3 +327,73 @@ async def perform_update(status: UpdateStatus) -> tuple[bool, str]:
             continue
 
     return False, "pip install fehlgeschlagen – auch mit --break-system-packages"
+
+
+# ─────────────────────────────────────────────────────────────
+# Auto-Update (silent background check + install)
+# ─────────────────────────────────────────────────────────────
+
+@dataclass
+class AutoUpdateResult:
+    """Result of an auto-update attempt."""
+    checked: bool = False
+    update_found: bool = False
+    update_successful: bool = False
+    previous_version: str = ""
+    new_version: str = ""
+    error: str = ""
+
+
+async def auto_update() -> AutoUpdateResult:
+    """Silent background update: check + install without user interaction.
+
+    Returns:
+        AutoUpdateResult with details about what happened.
+    """
+    result = AutoUpdateResult()
+
+    # Step 1: Check for updates
+    try:
+        status = await asyncio.wait_for(check_for_updates(), timeout=10.0)
+    except asyncio.TimeoutError:
+        result.error = "Update check timed out"
+        log.debug("Auto-update: check timed out")
+        return result
+    except Exception as e:
+        result.error = str(e)
+        log.debug(f"Auto-update: check failed: {e}")
+        return result
+
+    result.checked = True
+    result.previous_version = status.current_version
+
+    if not status.is_update_available:
+        log.debug("Auto-update: no update available")
+        return result
+
+    result.update_found = True
+    result.new_version = status.latest_version
+
+    # Step 2: Install silently
+    log.info(f"Auto-update: v{status.current_version} → v{status.latest_version} found, installing...")
+
+    try:
+        success, msg = await asyncio.wait_for(
+            perform_update(status), timeout=300.0
+        )
+    except asyncio.TimeoutError:
+        result.error = "Update installation timed out (300s)"
+        log.warning(f"Auto-update: install timed out")
+        return result
+    except Exception as e:
+        result.error = str(e)
+        log.warning(f"Auto-update: install failed: {e}")
+        return result
+
+    result.update_successful = success
+    if not success:
+        result.error = msg
+        log.warning(f"Auto-update: install failed: {msg}")
+
+    log.info(f"Auto-update: {'✅ success' if success else '❌ failed'}: {msg}")
+    return result
