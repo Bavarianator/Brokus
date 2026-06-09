@@ -1163,6 +1163,7 @@ async def settings_menu():
         choice = choose("", [
             t("settings.overview"),
             None,
+            t("settings.help"),
             t("settings.provider"),
             t("settings.ai"),
             t("settings.generation"),
@@ -1180,27 +1181,29 @@ async def settings_menu():
         elif choice == 0:
             _view_all_settings()
         elif choice == 1:
-            await _settings_provider_menu()
+            _show_help()
         elif choice == 2:
-            await _settings_ai_menu()
+            await _settings_provider_menu()
         elif choice == 3:
-            await _settings_generation_menu()
+            await _settings_ai_menu()
         elif choice == 4:
-            await _settings_ui_menu()
+            await _settings_generation_menu()
         elif choice == 5:
-            await _settings_advanced_menu()
+            await _settings_ui_menu()
         elif choice == 6:
-            _open_settings_yaml()
+            await _settings_advanced_menu()
         elif choice == 7:
-            _reset_settings_to_defaults()
+            _open_settings_yaml()
         elif choice == 8:
+            _reset_settings_to_defaults()
+        elif choice == 9:
             # Remove sentinel so wizard runs again on next start
             try:
                 WIZARD_SENTINEL.unlink(missing_ok=True)
             except Exception:
                 pass
             await first_time_wizard()
-        elif choice == 9:
+        elif choice == 10:
             break
 
 
@@ -1231,6 +1234,55 @@ def _settings_table(rows: list[tuple[str, str]], title: str | None = None):
         console.print(Panel(table, title=title, border_style="bright_blue", padding=(0, 1)))
     else:
         console.print(table)
+
+
+def _show_help():
+    """Show a comprehensive help page explaining all app features."""
+    section(t("help.title"))
+
+    sections = [
+        ("🏠", t("help.main_menu"), [
+            f"[cyan]1[/cyan]. {t('main.quick_book')} – {t('help.quick_desc')}",
+            f"[cyan]2[/cyan]. {t('main.master')} – {t('help.master_desc')}",
+            f"[cyan]3[/cyan]. {t('main.library')} – {t('help.library_desc')}",
+            f"[cyan]4[/cyan]. {t('main.settings')} – {t('help.settings_desc')}",
+            f"[cyan]5[/cyan]. {t('language.choose')} – {t('help.language_desc')}",
+            f"[cyan]6[/cyan]. {t('main.quit')} – {t('help.quit_desc')}",
+        ]),
+        ("📖", t("help.generation"), [
+            t("help.gen_compliance"),
+            t("help.gen_export"),
+            t("help.gen_fallback"),
+        ]),
+        ("⚙️", t("help.settings_help"), [
+            f"• {t('settings.provider')} – {t('help.provider_desc')}",
+            f"• {t('settings.ai')} – {t('help.ai_desc')}",
+            f"• {t('settings.generation')} – {t('help.gen_settings_desc')}",
+            f"• {t('settings.ui')} – {t('help.ui_desc')}",
+            f"• {t('settings.advanced')} – {t('help.advanced_desc')}",
+        ]),
+        ("🔐", t("help.security"), [
+            t("help.api_key_desc"),
+            t("help.passphrase_desc"),
+        ]),
+        ("⌨️", t("help.navigation"), [
+            t("help.nav_numbers"),
+            t("help.nav_enter"),
+            t("help.nav_ctrl_c"),
+        ]),
+    ]
+
+    for emoji, title, lines in sections:
+        body = "\n".join(f"  {line}" for line in lines)
+        console.print(Panel(
+            body,
+            title=f"{emoji} {title}",
+            border_style="bright_blue",
+            padding=(0, 1),
+        ))
+        console.print()
+
+    pause()
 
 
 async def _settings_provider_menu():

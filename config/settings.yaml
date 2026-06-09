@@ -400,7 +400,7 @@ storage:
 ui:
   animations: true
   confirm_quit: true
-  language: nl
+  language: en
   log_level: INFO
   progress_style: bar
   show_cost_estimate: true
