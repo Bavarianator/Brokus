@@ -1,0 +1,9 @@
+2026-06-08 15:06:49,405 [INFO] Database initialized
+2026-06-08 15:06:49,871 [DEBUG] Loaded 1 encrypted secrets
+2026-06-08 15:07:58,753 [INFO] Project created: 'jedoch eigene Zweifel, als ein geliebter Partner stirbt und seine ältesten Kinder gegen die starre Rangfolge rebellieren.' (ID: 2)
+2026-06-08 15:07:58,771 [DEBUG] Loaded 11 prompts from /home/bayernator/yay/brokus/config/prompts.yaml
+2026-06-08 15:07:58,797 [DEBUG] Loaded 33 genres from /home/bayernator/yay/brokus/config/genres.yaml
+2026-06-08 15:07:58,798 [INFO] Extracting book DNA...
+2026-06-08 15:07:58,798 [WARNING] Provider 'ollama_cloud' attempt 1/1 failed: No module named 'ollama'
+2026-06-08 15:07:58,798 [ERROR] All 1 attempts exhausted for provider 'ollama_cloud'
+2026-06-08 15:07:58,801 [ERROR] Generation error: AI generation failed after 1 attempts: No module named 'ollama'

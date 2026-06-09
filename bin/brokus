@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# brokus – KI-Buchgenerator im Terminal
+# Symlink this file to ~/.local/bin/brokus or /usr/local/bin/brokus
+
+set -e
+
+# Resolve symlinks first, then find the project directory
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+
+# Run via python -m brokus
+cd "$SCRIPT_DIR"
+exec python3 -m brokus "$@"
