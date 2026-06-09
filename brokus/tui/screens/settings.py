@@ -249,12 +249,10 @@ class SettingsScreen(Screen):
         if not cfg:
             return
 
-        # Update model dropdown
+        # Update model dropdown from hardcoded list first (instant)
         model_select = self.query_one("#select-model", Select)
         model_options = [(m, m) for m in cfg.models]
         model_select.set_options(model_options)
-
-        # Show first model if available
         if cfg.models:
             model_select.value = cfg.models[0]
 
@@ -271,6 +269,65 @@ class SettingsScreen(Screen):
         if cfg.base_url:
             status_text += f" | {cfg.base_url}"
         self.query_one("#provider-status", Static).update(status_text)
+
+        # Hintergrund: Modelle live vom Endpoint laden
+        asyncio.create_task(self._refresh_models_async(provider_key))
+
+    async def _refresh_models_async(self, provider_key: str, force: bool = False):
+        """Try to fetch live models; update dropdown + info on success."""
+        try:
+            from brokus.ai.model_discovery import get_provider_models_async
+        except Exception as e:
+            self.query_one("#provider-info", Static).update(f"⚠️ Discovery nicht verfügbar: {e}")
+            return
+
+        cfg = self._provider_data.get(provider_key)
+        if not cfg:
+            return
+
+        # Custom-Base-URL aus dem Input-Feld lesen
+        try:
+            custom_url = self.query_one("#input-base-url", Input).value.strip() or None
+        except Exception:
+            custom_url = None
+
+        self.query_one("#provider-info", Static).update("🔄 Lade Modelle vom Endpoint...")
+
+        try:
+            result = await get_provider_models_async(
+                provider_key, custom_base_url=custom_url, force_refresh=force,
+            )
+        except Exception as e:
+            self.query_one("#provider-info", Static).update(f"❌ Fehler: {str(e)[:80]}")
+            return
+
+        if not result.models:
+            self.query_one("#provider-info", Static).update("⚠️ Keine Modelle entdeckt – Fallback-Liste aktiv")
+            return
+
+        # Dropdown aktualisieren
+        model_select = self.query_one("#select-model", Select)
+        model_select.set_options([(m, m) for m in result.models])
+        if result.models:
+            model_select.value = result.models[0]
+
+        source_label = {
+            "live": "🌐 Live vom Endpoint",
+            "cache": "💾 Aus Cache (TTL)",
+            "fallback": "📋 Fallback-Liste",
+        }.get(result.source, result.source)
+        n = len(result.models)
+        self.query_one("#provider-info", Static).update(
+            f"📋 {n} Modelle · {source_label}"
+        )
+        if result.error and result.source != "live":
+            self.query_one("#provider-status", Static).update(
+                f"ℹ️  {result.error[:80]}"
+            )
+
+    def action_refresh_models(self):
+        """Force-refresh the model list from the live endpoint."""
+        asyncio.create_task(self._refresh_models_async(self._current_provider, force=True))
 
     async def _load_settings(self):
         """Load settings from config file."""
@@ -612,6 +669,8 @@ class SettingsScreen(Screen):
             self.action_reset()
         elif button_id == "btn-test":
             self.action_test_connection()
+        elif button_id == "btn-refresh-models":
+            self.action_refresh_models()
         elif button_id == "btn-back":
             self.action_go_back()
 
