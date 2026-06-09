@@ -1196,14 +1196,29 @@ def _pick_model():
         console.print("[yellow]Keine Modelle für diesen Provider.[/yellow]")
         return
 
+    # ── Live-Model-Discovery: versuche Modelle vom Endpoint zu holen ──
+    try:
+        from brokus.ai.model_discovery import get_provider_models_sync
+        result = get_provider_models_sync(settings.provider, force_refresh=False)
+        if result.models and result.source in ("live", "cache"):
+            old_count = len(pc["models"])
+            pc["models"] = result.models
+            icon = "🌐" if result.source == "live" else "💾"
+            label = "Live vom Endpoint" if result.source == "live" else "Aus Cache"
+            console.print(f"  {icon} [cyan]{len(result.models)} Modelle entdeckt ({label})[/cyan]")
+            if result.source == "cache":
+                console.print("  [dim](Tipp: 'Modelle neu laden' für frische Liste)[/dim]")
+    except Exception as e:
+        log.debug(f"Discovery skipped: {e}")
+
     # Providers that support custom model names (user types any name)
-    _CUSTOM_MODEL_PROVIDERS = {"ollama_local", "lmstudio", "localai", "openrouter"}
+    _CUSTOM_MODEL_PROVIDERS = {"ollama_local", "lmstudio", "localai", "openrouter", "openai_compat", "huggingface"}
 
     options = list(pc["models"])
     if pc["key"] in _CUSTOM_MODEL_PROVIDERS:
         options.append("✏️  Benutzerdefiniert – Namen eingeben...")
 
-    idx = choose(f"Modell wählen ({settings.provider}):", options)
+    idx = choose(f"Modell wählen ({settings.provider}, {len(pc['models'])} verfügbar):", options)
     if idx < 0:
         return
 
@@ -1220,6 +1235,26 @@ def _pick_model():
 
     settings.save()
     console.print(f"\n  [green]✓ Modell: {settings.model}[/green]")
+
+
+def _force_refresh_models():
+    """Force-refresh the model list (bypass TTL cache)."""
+    try:
+        from brokus.ai.model_discovery import get_provider_models_sync
+        console.print(f"  🔄 Lade Modelle für [cyan]{settings.provider}[/cyan] vom Endpoint...")
+        result = get_provider_models_sync(settings.provider, force_refresh=True)
+        if result.models:
+            icon = "🌐" if result.source == "live" else "💾"
+            console.print(f"  {icon} [green]✓ {len(result.models)} Modelle entdeckt ({result.source})[/green]")
+            for m in result.models[:15]:
+                console.print(f"     • {m}")
+            if len(result.models) > 15:
+                console.print(f"     [dim]… und {len(result.models) - 15} weitere[/dim]")
+        else:
+            console.print(f"  [yellow]⚠ Keine Modelle entdeckt: {result.error or 'leere Antwort'}[/yellow]")
+    except Exception as e:
+        console.print(f"  [red]Fehler: {e}[/red]")
+    pause()
 
 
 def _enter_api_key():
