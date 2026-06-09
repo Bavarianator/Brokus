@@ -137,8 +137,12 @@ cd brokus
 brokus                           # Direkt aufrufbar!
 ```
 
+> **⚠️ Wichtig:** `brokus/` **(mit Schrägstrich) ist das Python-Paket** – ein Ordner, kein Executable.
+> Das ausführbare Skript ist **`bin/brokus`**. `install.sh` erstellt einen Symlink von `bin/brokus` → `~/.local/bin/brokus`,
+> damit `brokus` danach als globaler Befehl zur Verfügung steht.
+
 `install.sh` erledigt alles:
-- Symlinkt `bin/brokus` → `~/.local/bin/brokus`
+- Symlinkt `bin/brokus` → `~/.local/bin/brokus` (das **Executable**, nicht den Paket-Ordner!)
 - Installiert Python-Dependencies (mit PEP 668 Fallback für Arch Linux)
 - Trägt `~/.local/bin` in die Shell-Config ein (zsh/bash)
 
