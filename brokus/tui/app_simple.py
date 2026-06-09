@@ -170,6 +170,7 @@ class Settings:
     request_timeout: int = 300
     cache_responses: bool = True
     max_cache_size_mb: int = 500
+    max_retries: int = 3
 
     def load(self):
         # 1) Versuche zuerst die zentrale settings.yaml (Single-Source-of-Truth)
@@ -1086,83 +1087,212 @@ def _get_providers() -> list[dict]:
 
 
 async def settings_menu():
+    """Top-level settings menu with clean sub-menus.
+
+    Struktur:
+      1. Übersicht (alle Werte auf einen Blick)
+      2. Provider & Modell    → Sub-Menu
+      3. KI-Parameter        → Sub-Menu
+      4. Generierung         → Sub-Menu
+      5. UI & Logging        → Sub-Menu
+      6. Erweitert           → Sub-Menu
+      7. YAML im Editor öffnen
+      8. Auf Standard zurücksetzen
+      9. Zurück zum Hauptmenü
+    """
     while True:
         section("⚙️ Einstellungen")
 
+        # ── Kompakte Zusammenfassung (Top 6 wichtigste Werte) ──
+        has_key = _has_api_key()
+        key_status = "[green]✓[/green]" if has_key else "[red]✗[/red]"
+        ek = ", ".join(settings.export_formats) or "[dim]–[/dim]"
+        console.print(f"  [bold]Provider:[/bold] {settings.provider}  |  [bold]Modell:[/bold] {settings.model}  |  [bold]Key:[/bold] {key_status}")
+        console.print(f"  [bold]Temp:[/bold] {settings.temperature}  |  [bold]Top-P:[/bold] {settings.top_p if settings.top_p is not None else '–'}  |  [bold]Tokens:[/bold] {settings.max_tokens}")
+        console.print(f"  [bold]Sprache:[/bold] {settings.default_language}  |  [bold]Kapitel:[/bold] {settings.default_chapters}  |  [bold]Tempo:[/bold] {settings.story_pace}")
+        console.print(f"  [bold]Detailgrad:[/bold] {settings.detail_level}  |  [bold]Compliance:[/bold] {settings.compliance_threshold}%  |  [bold]Log:[/bold] {settings.log_level}")
+        console.print(f"  [bold]Export:[/bold] {ek}  |  [bold]Cache:[/bold] {'✓' if settings.cache_responses else '✗'}  |  [bold]Backup:[/bold] {'✓' if settings.backup_enabled else '✗'}")
+
+        choice = choose("", [
+            "📋  Übersicht – Alle Einstellungen anzeigen",
+            "───────────────────",
+            "🤖  Provider & Modell",
+            "🎛️   KI-Parameter",
+            "📝  Generierung",
+            "🎨  UI & Logging",
+            "⚙️   Erweitert",
+            "───────────────────",
+            "📂  config/settings.yaml im Editor öffnen",
+            "🔄  Auf Standard zurücksetzen",
+            "↩  Zurück zum Hauptmenü",
+        ])
+
+        if choice in (1, 7):
+            continue  # Separator
+        if choice == 0:
+            _view_all_settings()
+        elif choice == 2:
+            await _settings_provider_menu()
+        elif choice == 3:
+            await _settings_ai_menu()
+        elif choice == 4:
+            await _settings_generation_menu()
+        elif choice == 5:
+            await _settings_ui_menu()
+        elif choice == 6:
+            await _settings_advanced_menu()
+        elif choice == 8:
+            _open_settings_yaml()
+        elif choice == 9:
+            _reset_settings_to_defaults()
+        elif choice == 10:
+            break
+
+
+# ─────────────────────────────────────────────────────────────
+# Sub-Menüs
+# ─────────────────────────────────────────────────────────────
+
+def _on_off(b: bool) -> str:
+    return "[green]AN[/green]" if b else "[red]AUS[/red]"
+
+
+async def _settings_provider_menu():
+    """Sub-Menu: Provider, Modell, API-Key, URL, Fallbacks, Discovery."""
+    while True:
+        section("🤖 Provider & Modell")
         has_key = _has_api_key()
         key_status = "[green]✓ gesetzt[/green]" if has_key else "[red]✗ fehlt[/red]"
-        ek = ", ".join(f[1] for f in EXPORT_FORMATS if f[0] in settings.export_formats) or "[dim]keine[/dim]"
-
-        wp_status = "[green]✓ an[/green]" if settings.wizard_model_picker else "[red]✗ aus[/red]"
-        cd_status = "[green]✓ an[/green]" if settings.chapter_delay_enabled else "[red]✗ aus[/red]"
-        ext_status = "[green]✓ an[/green]" if settings.use_extended_thinking else "[red]✗ aus[/red]"
-        ae_status = "[green]✓ an[/green]" if settings.auto_export else "[red]✗ aus[/red]"
-        bu_status = "[green]✓ an[/green]" if settings.backup_enabled else "[red]✗ aus[/red]"
-
-        console.print(f"  [bold]Provider:[/bold]         {settings.provider}")
-        console.print(f"  [bold]Modell:[/bold]           {settings.model}")
-        console.print(f"  [bold]API-Key:[/bold]          {key_status}")
-        console.print(f"  [bold]Temperature:[/bold]      {settings.temperature}  |  [bold]Max-Tokens:[/bold] {settings.max_tokens}")
-        tp = settings.top_p if settings.top_p is not None else "[dim]aus[/dim]"
-        console.print(f"  [bold]Top-P:[/bold] {tp}  |  [bold]Freq-Pen:[/bold] {settings.frequency_penalty if settings.frequency_penalty is not None else '[dim]aus[/dim]'}")
+        console.print(f"  [bold]Provider:[/bold]   {settings.provider}")
+        console.print(f"  [bold]Modell:[/bold]     {settings.model}")
+        console.print(f"  [bold]API-Key:[/bold]    {key_status}")
         if settings.custom_base_url:
-            console.print(f"  [bold]Custom-URL:[/bold]       {settings.custom_base_url}")
-        console.print(f"  [bold]Sprache:[/bold] {settings.default_language}  |  [bold]Kapitel:[/bold] {settings.default_chapters}  |  [bold]Delay:[/bold] {cd_status}")
-        console.print(f"  [bold]Detailgrad:[/bold] {settings.detail_level}  |  [bold]Tempo:[/bold] {settings.story_pace}  |  [bold]Thinking:[/bold] {ext_status}")
-        console.print(f"  [bold]Auto-Export:[/bold] {ae_status}  |  [bold]Backup:[/bold] {bu_status}  |  [bold]Export-Formate:[/bold] {ek}")
-        console.print(f"  [bold]Modell-Wizard:[/bold]     {wp_status}  |  [bold]Log-Level:[/bold] {settings.log_level}")
+            console.print(f"  [bold]Custom-URL:[/bold] {settings.custom_base_url}")
+        if settings.fallback_models_str.strip():
+            n = len([m for m in settings.fallback_models_str.split(",") if m.strip()])
+            console.print(f"  [bold]Fallbacks:[/bold]  {n} Modelle konfiguriert")
+        else:
+            console.print(f"  [bold]Fallbacks:[/bold]  [dim]Provider-Default[/dim]")
 
         choice = choose("", [
             "Provider wechseln",
             "Modell wechseln",
-            "API-Key eingeben",
-            "Custom-Base-URL setzen (für openai_compat / Proxies)",
-            "🎛️  AI-Parameter (Temperature, Top-P, Penalties)",
-            "📝 Generierung (Sprache, Kapitel, Tempo, Detailgrad, Backup)",
-            "Export-Formate wählen",
-            "Modell-Auswahl im Wizard an/aus",
+            "API-Key eingeben / ändern",
+            "Custom-Base-URL (openai_compat / Proxies)",
             "Fallback-Modelle konfigurieren",
+            "🔃  Modelle neu laden (Live-Discovery, TTL ignorieren)",
+            "↩  Zurück zu Einstellungen",
+        ])
+        if choice == 0: _pick_provider()
+        elif choice == 1: _pick_model()
+        elif choice == 2: _enter_api_key()
+        elif choice == 3: _set_custom_base_url()
+        elif choice == 4: _configure_fallback_models()
+        elif choice == 5: _force_refresh_models()
+        elif choice == 6: break
+
+
+async def _settings_ai_menu():
+    """Sub-Menu: Sampling-Parameter, Compliance, Retries."""
+    while True:
+        section("🎛️ KI-Parameter")
+        console.print(f"  [bold]Temperature:[/bold]    {settings.temperature}")
+        console.print(f"  [bold]Max-Tokens:[/bold]     {settings.max_tokens}")
+        console.print(f"  [bold]Top-P:[/bold]          {settings.top_p if settings.top_p is not None else '[dim]aus[/dim]'}")
+        console.print(f"  [bold]Frequency-Pen:[/bold]  {settings.frequency_penalty if settings.frequency_penalty is not None else '[dim]aus[/dim]'}")
+        console.print(f"  [bold]Presence-Pen:[/bold]   {settings.presence_penalty if settings.presence_penalty is not None else '[dim]aus[/dim]'}")
+        console.print(f"  [bold]Compliance:[/bold]     {settings.compliance_threshold}%")
+        console.print(f"  [bold]Max-Retries:[/bold]    {settings.max_retries}")
+
+        choice = choose("", [
+            "AI-Parameter bearbeiten (Temp, Top-P, Penalties)",
+            "Compliance-Schwelle setzen (0–100%)",
+            "Max. Retries setzen",
+            "↩  Zurück zu Einstellungen",
+        ])
+        if choice == 0: _edit_ai_params()
+        elif choice == 1: _set_compliance_threshold()
+        elif choice == 2: _set_max_retries()
+        elif choice == 3: break
+
+
+async def _settings_generation_menu():
+    """Sub-Menu: Sprache, Kapitel, Tempo, Detailgrad, Toggles, Export."""
+    while True:
+        section("📝 Generierung")
+        console.print(f"  [bold]Sprache:[/bold]      {settings.default_language}")
+        console.print(f"  [bold]Kapitel:[/bold]      {settings.default_chapters}")
+        console.print(f"  [bold]Tempo:[/bold]        {settings.story_pace}")
+        console.print(f"  [bold]Detailgrad:[/bold]   {settings.detail_level}")
+        console.print(f"  [bold]Kapitel-Delay:[/bold] {_on_off(settings.chapter_delay_enabled)}")
+        console.print(f"  [bold]Extended Think:[/bold] {_on_off(settings.use_extended_thinking)}")
+        console.print(f"  [bold]Backup:[/bold]       {_on_off(settings.backup_enabled)}")
+        console.print(f"  [bold]Auto-Export:[/bold]  {_on_off(settings.auto_export)}")
+        console.print(f"  [bold]Auto-Open:[/bold]    {_on_off(settings.auto_open_after_export)}")
+        console.print(f"  [bold]Export-Formate:[/bold] {', '.join(settings.export_formats) or '[dim]keine[/dim]'}")
+        console.print(f"  [bold]Modell-Wizard:[/bold] {_on_off(settings.wizard_model_picker)}")
+
+        choice = choose("", [
+            "Generierung bearbeiten (Sprache, Kapitel, Tempo, Detailgrad)",
             "Kapitel-Delay (2s) an/aus",
             "Extended Thinking an/aus",
+            "Backup vor Generation an/aus",
             "Auto-Export an/aus",
-            "🎨 UI & Logging (Log-Level, Token/Kosten-Anzeige)",
-            "🔧 Erweitert (Cache, Timeout, Max-Log-Größe)",
-            "📂 config/settings.yaml im Editor öffnen",
-            "↩ Zurück zum Hauptmenü",
+            "Auto-Open nach Export an/aus",
+            "Export-Formate wählen",
+            "Modell-Auswahl im Wizard an/aus",
+            "↩  Zurück zu Einstellungen",
         ])
+        if choice == 0: _edit_generation_params()
+        elif choice == 1: _toggle_chapter_delay()
+        elif choice == 2: _toggle_extended_thinking()
+        elif choice == 3: _toggle_backup()
+        elif choice == 4: _toggle_auto_export()
+        elif choice == 5: _toggle_auto_open()
+        elif choice == 6: _pick_export_formats()
+        elif choice == 7: _toggle_wizard_model_picker()
+        elif choice == 8: break
 
-        if choice == 0:
-            _pick_provider()
-        elif choice == 1:
-            _pick_model()
-        elif choice == 2:
-            _enter_api_key()
-        elif choice == 3:
-            _set_custom_base_url()
-        elif choice == 4:
-            _edit_ai_params()
-        elif choice == 5:
-            _edit_generation_params()
-        elif choice == 6:
-            _pick_export_formats()
-        elif choice == 7:
-            _toggle_wizard_model_picker()
-        elif choice == 8:
-            _configure_fallback_models()
-        elif choice == 9:
-            _toggle_chapter_delay()
-        elif choice == 10:
-            _toggle_extended_thinking()
-        elif choice == 11:
-            _toggle_auto_export()
-        elif choice == 12:
-            _edit_ui_params()
-        elif choice == 13:
-            _edit_advanced_params()
-        elif choice == 14:
-            _open_settings_yaml()
-        elif choice == 15:
-            break
+
+async def _settings_ui_menu():
+    """Sub-Menu: Log-Level, Token/Kosten-Anzeige, Beenden-Bestätigung."""
+    while True:
+        section("🎨 UI & Logging")
+        console.print(f"  [bold]Log-Level:[/bold]       {settings.log_level}")
+        console.print(f"  [bold]Token-Anzeige:[/bold]   {_on_off(settings.show_token_count)}")
+        console.print(f"  [bold]Kosten-Anzeige:[/bold]  {_on_off(settings.show_cost_estimate)}")
+        console.print(f"  [bold]Beenden-Bestätigung:[/bold] {_on_off(settings.confirm_quit)}")
+
+        choice = choose("", [
+            "UI bearbeiten (Log-Level)",
+            "Token-Anzeige an/aus",
+            "Kosten-Schätzung an/aus",
+            "Beenden-Bestätigung an/aus",
+            "↩  Zurück zu Einstellungen",
+        ])
+        if choice == 0: _edit_ui_params()
+        elif choice == 1: _toggle_show_tokens()
+        elif choice == 2: _toggle_show_cost()
+        elif choice == 3: _toggle_confirm_quit()
+        elif choice == 4: break
+
+
+async def _settings_advanced_menu():
+    """Sub-Menu: Timeout, Cache, Cache-Größe."""
+    while True:
+        section("⚙️ Erweitert")
+        console.print(f"  [bold]Request-Timeout:[/bold]  {settings.request_timeout}s")
+        console.print(f"  [bold]AI-Cache:[/bold]         {_on_off(settings.cache_responses)}")
+        console.print(f"  [bold]Max. Cache-Größe:[/bold] {settings.max_cache_size_mb} MB")
+
+        choice = choose("", [
+            "Erweitert bearbeiten (Timeout, Cache-Größe)",
+            "AI-Cache an/aus",
+            "↩  Zurück zu Einstellungen",
+        ])
+        if choice == 0: _edit_advanced_params()
+        elif choice == 1: _toggle_cache()
+        elif choice == 2: break
 
 
 def _pick_provider():
@@ -1488,7 +1618,7 @@ def _edit_ai_params():
 
 
 def _edit_generation_params():
-    """Edit generation parameters (language, chapters, pace, detail, backup)."""
+    """Edit generation parameters (language, chapters, pace, detail)."""
     section("📝 Generierung")
     lang_keys = [l for l in LANGUAGES]
     li = choose("Default-Sprache:", lang_keys)
@@ -1509,12 +1639,176 @@ def _edit_generation_params():
     di = choose("Detailgrad der Umsetzung:", details)
     if di >= 0:
         settings.detail_level = dkeys[di]
-    settings.backup_enabled = confirm("Backup vor jeder Generation aktivieren?") if settings.backup_enabled is False else settings.backup_enabled
-    if not settings.backup_enabled:
-        if confirm("Backup vor jeder Generation aktivieren?"):
-            settings.backup_enabled = True
+    # Compliance-Schwelle
+    ct = ask_text(
+        f"Compliance-Schwelle 0–100% (aktuell: {settings.compliance_threshold}):",
+        default=str(settings.compliance_threshold),
+    )
+    try:
+        settings.compliance_threshold = max(0, min(100, int(ct)))
+    except ValueError:
+        pass
     settings.save()
     console.print("  [green]✓ Generierung gespeichert.[/green]")
+    pause()
+
+
+def _toggle_backup():
+    """Toggle backup before each generation."""
+    settings.backup_enabled = not settings.backup_enabled
+    settings.save()
+    status = "[green]AN[/green]" if settings.backup_enabled else "[red]AUS[/red]"
+    console.print(f"\n  Backup vor Generation: {status}")
+    if settings.backup_enabled:
+        console.print("  [dim]Vor jeder Buch-Generierung wird ein DB-Backup angelegt.[/dim]")
+    else:
+        console.print("  [dim]⚠ Kein automatisches Backup – Datenverlust möglich.[/dim]")
+    pause()
+
+
+def _toggle_auto_open():
+    """Toggle auto-open of exported file."""
+    settings.auto_open_after_export = not settings.auto_open_after_export
+    settings.save()
+    status = "[green]AN[/green]" if settings.auto_open_after_export else "[red]AUS[/red]"
+    console.print(f"\n  Auto-Open nach Export: {status}")
+    if settings.auto_open_after_export:
+        console.print("  [dim]Nach dem Export wird die Datei automatisch mit dem System-Reader geöffnet.[/dim]")
+    else:
+        console.print("  [dim]Du wirst nach dem Export gefragt, ob du die Datei öffnen möchtest.[/dim]")
+    pause()
+
+
+def _toggle_confirm_quit():
+    """Toggle quit confirmation."""
+    settings.confirm_quit = not settings.confirm_quit
+    settings.save()
+    status = "[green]AN[/green]" if settings.confirm_quit else "[red]AUS[/red]"
+    console.print(f"\n  Beenden-Bestätigung: {status}")
+    if settings.confirm_quit:
+        console.print("  [dim]Du wirst vor dem Beenden gefragt, ob du wirklich abbrechen willst.[/dim]")
+    else:
+        console.print("  [dim]Brokus beendet sich sofort – vorsichtig![/dim]")
+    pause()
+
+
+def _toggle_cache():
+    """Toggle AI response cache."""
+    settings.cache_responses = not settings.cache_responses
+    settings.save()
+    status = "[green]AN[/green]" if settings.cache_responses else "[red]AUS[/red]"
+    console.print(f"\n  AI-Antworten cachen: {status}")
+    if settings.cache_responses:
+        console.print(f"  [dim]Cache aktiv, max. {settings.max_cache_size_mb} MB.[/dim]")
+    else:
+        console.print("  [dim]Kein Cache – jede Anfrage geht direkt zum Provider (langsamer, teurer).[/dim]")
+    pause()
+
+
+def _toggle_show_tokens():
+    """Toggle token count display."""
+    settings.show_token_count = not settings.show_token_count
+    settings.save()
+    status = "[green]AN[/green]" if settings.show_token_count else "[red]AUS[/red]"
+    console.print(f"\n  Token-Verbrauch anzeigen: {status}")
+    pause()
+
+
+def _toggle_show_cost():
+    """Toggle cost estimate display."""
+    settings.show_cost_estimate = not settings.show_cost_estimate
+    settings.save()
+    status = "[green]AN[/green]" if settings.show_cost_estimate else "[red]AUS[/red]"
+    console.print(f"\n  Kosten-Schätzung anzeigen: {status}")
+    pause()
+
+
+def _set_max_retries():
+    """Set max retries for AI calls."""
+    val = ask_text(
+        f"Max. Retries bei Fehlern (aktuell: {getattr(settings, 'max_retries', 3)}):",
+        default="3",
+    )
+    try:
+        settings.max_retries = max(0, min(10, int(val)))
+        settings.save()
+        console.print(f"  [green]✓ Max-Retries auf {settings.max_retries} gesetzt.[/green]")
+    except ValueError:
+        console.print("  [red]Ungültiger Wert.[/red]")
+    pause()
+
+
+def _set_compliance_threshold():
+    """Set compliance threshold (0–100)."""
+    val = ask_text(
+        f"Compliance-Schwelle 0–100 (aktuell: {settings.compliance_threshold}):",
+        default=str(settings.compliance_threshold),
+    )
+    try:
+        settings.compliance_threshold = max(0, min(100, int(val)))
+        settings.save()
+        console.print(f"  [green]✓ Compliance-Schwelle auf {settings.compliance_threshold}% gesetzt.[/green]")
+    except ValueError:
+        console.print("  [red]Ungültiger Wert.[/red]")
+    pause()
+
+
+def _view_all_settings():
+    """Show all current settings in a comprehensive overview table."""
+    section("📋 Alle Einstellungen")
+    table = Table(show_header=True, header_style="bold cyan", show_lines=False, padding=(0, 1))
+    table.add_column("Kategorie", style="bold bright_blue", width=18)
+    table.add_column("Setting", width=28)
+    table.add_column("Wert", style="green")
+
+    def yesno(b): return "[green]✓ AN[/green]" if b else "[red]✗ AUS[/red]"
+    def opt(v): return f"{v}" if v is not None else "[dim]aus[/dim]"
+
+    # Provider / API
+    has_key = _has_api_key()
+    table.add_row("🤖 Provider", "Provider", settings.provider)
+    table.add_row("", "Modell", settings.model)
+    table.add_row("", "API-Key", "[green]✓ gesetzt[/green]" if has_key else "[red]✗ fehlt[/red]")
+    table.add_row("", "Custom-Base-URL", settings.custom_base_url or "[dim](default)[/dim]")
+
+    # AI-Parameter
+    table.add_row("🎛️ AI-Parameter", "Temperature", f"{settings.temperature}")
+    table.add_row("", "Max-Tokens", f"{settings.max_tokens}")
+    table.add_row("", "Top-P", opt(settings.top_p))
+    table.add_row("", "Frequency-Penalty", opt(settings.frequency_penalty))
+    table.add_row("", "Presence-Penalty", opt(settings.presence_penalty))
+
+    # Generierung
+    table.add_row("📝 Generierung", "Default-Sprache", settings.default_language)
+    table.add_row("", "Default-Kapitel", f"{settings.default_chapters}")
+    table.add_row("", "Detailgrad", settings.detail_level)
+    table.add_row("", "Erzähltempo", settings.story_pace)
+    table.add_row("", "Compliance-Schwelle", f"{settings.compliance_threshold}%")
+    table.add_row("", "Kapitel-Delay", yesno(settings.chapter_delay_enabled))
+    table.add_row("", "Auto-Retry", yesno(settings.auto_retry))
+    table.add_row("", "Backup vor Generation", yesno(settings.backup_enabled))
+    table.add_row("", "Auto-Export", yesno(settings.auto_export))
+    table.add_row("", "Auto-Open nach Export", yesno(settings.auto_open_after_export))
+    table.add_row("", "Export-Formate", ", ".join(settings.export_formats) or "[dim]keine[/dim]")
+
+    # Reasoning / Fallback
+    table.add_row("🧠 Erweitert", "Extended Thinking", yesno(settings.use_extended_thinking))
+    table.add_row("", "Wizard-Modellauswahl", yesno(settings.wizard_model_picker))
+    fb = settings.fallback_models_str or "[dim]Provider-Default[/dim]"
+    table.add_row("", "Fallback-Modelle", fb.strip() or "[dim]Provider-Default[/dim]")
+
+    # UI
+    table.add_row("🎨 UI & Logging", "Log-Level", settings.log_level)
+    table.add_row("", "Token-Anzeige", yesno(settings.show_token_count))
+    table.add_row("", "Kosten-Anzeige", yesno(settings.show_cost_estimate))
+    table.add_row("", "Beenden-Bestätigung", yesno(settings.confirm_quit))
+
+    # Advanced
+    table.add_row("⚙️ Technisch", "Request-Timeout", f"{settings.request_timeout}s")
+    table.add_row("", "Cache aktiv", yesno(settings.cache_responses))
+    table.add_row("", "Max. Cache-Größe", f"{settings.max_cache_size_mb} MB")
+
+    console.print(table)
     pause()
 
 
@@ -1522,12 +1816,10 @@ def _edit_ui_params():
     """Edit UI / logging parameters."""
     section("🎨 UI & Logging")
     levels = ["DEBUG", "INFO", "WARNING", "ERROR"]
-    cur = settings.log_level
-    idx = levels.index(cur) if cur in levels else 1
     li = choose("Log-Level:", levels)
     if li >= 0:
         settings.log_level = levels[li]
-    settings.show_token_count = not (settings.show_token_count is False) if False else settings.show_token_count
+    # Toggles mit klarer UX
     if confirm(f"Token-Verbrauch anzeigen? (aktuell: {'ja' if settings.show_token_count else 'nein'})"):
         settings.show_token_count = True
     else:
@@ -1560,6 +1852,24 @@ def _edit_advanced_params():
         settings.cache_responses = False
     settings.save()
     console.print("  [green]✓ Erweiterte Einstellungen gespeichert.[/green]")
+    pause()
+
+
+def _reset_settings_to_defaults():
+    """Reset all settings to their default values."""
+    if not confirm("⚠ Wirklich ALLE Einstellungen auf Standard zurücksetzen?"):
+        return
+    global settings
+    # Re-create with defaults
+    fresh = Settings()
+    # Preserve provider/model (so we don't lock out users)
+    fresh.provider = settings.provider
+    fresh.model = settings.model
+    fresh.custom_base_url = settings.custom_base_url
+    fresh.fallback_models_str = settings.fallback_models_str
+    settings = fresh
+    settings.save()
+    console.print("  [green]✓ Alle Einstellungen auf Standard zurückgesetzt (Provider/Model/API behalten).[/green]")
     pause()
 
 
