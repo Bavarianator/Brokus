@@ -20,6 +20,9 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.rule import Rule
 
+from brokus.utils.i18n import (
+    t, set_language, get_language, available_languages, language_name,
+)
 from brokus.utils.logger import log
 
 console = Console()
@@ -534,15 +537,17 @@ async def main_menu():
 
         has_key = _has_api_key()
         key_status = "[green]✓ gesetzt[/green]" if has_key else "[red]✗ fehlt[/red]"
-        console.print(f"  Provider: [bold]{settings.provider}[/bold]  |  Modell: [bold]{settings.model}[/bold]  |  API-Key: {key_status}")
+        lang_label = language_name(get_language())
+        console.print(f"  {t('label.provider')} [bold]{settings.provider}[/bold]  |  {t('label.model')} [bold]{settings.model}[/bold]  |  {t('label.api_key')} {key_status}  |  🌐 [bold]{lang_label}[/bold]")
         console.print()
 
-        choice = choose("Was möchtest du tun?", [
-            "⚡  Schnell-Buch – Idee eingeben und los!",
-            "✨  Meisterwerk – Alle Details konfigurieren",
-            "📖  Bibliothek – Gespeicherte Bücher lesen",
-            "⚙️   Einstellungen – API-Key, Modell, Export",
-            "🚪  Beenden",
+        choice = choose(t("main.title"), [
+            t("main.quick_book"),
+            t("main.master"),
+            t("main.library"),
+            t("main.settings"),
+            f"🌐  Sprache / Language (aktuell: {lang_label})",
+            t("main.quit"),
         ])
 
         if choice == 0:
@@ -554,7 +559,9 @@ async def main_menu():
         elif choice == 3:
             await settings_menu()
         elif choice == 4:
-            console.print("\n[cyan]Auf Wiedersehen! 👋[/cyan]\n")
+            _change_language()
+        elif choice == 5:
+            console.print(f"\n[cyan]{t('main.goodbye')}[/cyan]\n")
             break
 
 
@@ -1101,30 +1108,31 @@ async def settings_menu():
       9. Zurück zum Hauptmenü
     """
     while True:
-        section("⚙️ Einstellungen")
+        section(t("section.settings"))
 
         # ── Kompakte Zusammenfassung (Top 6 wichtigste Werte) ──
         has_key = _has_api_key()
         key_status = "[green]✓[/green]" if has_key else "[red]✗[/red]"
-        ek = ", ".join(settings.export_formats) or "[dim]–[/dim]"
-        console.print(f"  [bold]Provider:[/bold] {settings.provider}  |  [bold]Modell:[/bold] {settings.model}  |  [bold]Key:[/bold] {key_status}")
-        console.print(f"  [bold]Temp:[/bold] {settings.temperature}  |  [bold]Top-P:[/bold] {settings.top_p if settings.top_p is not None else '–'}  |  [bold]Tokens:[/bold] {settings.max_tokens}")
-        console.print(f"  [bold]Sprache:[/bold] {settings.default_language}  |  [bold]Kapitel:[/bold] {settings.default_chapters}  |  [bold]Tempo:[/bold] {settings.story_pace}")
-        console.print(f"  [bold]Detailgrad:[/bold] {settings.detail_level}  |  [bold]Compliance:[/bold] {settings.compliance_threshold}%  |  [bold]Log:[/bold] {settings.log_level}")
-        console.print(f"  [bold]Export:[/bold] {ek}  |  [bold]Cache:[/bold] {'✓' if settings.cache_responses else '✗'}  |  [bold]Backup:[/bold] {'✓' if settings.backup_enabled else '✗'}")
+        ek = ", ".join(settings.export_formats) or f"[dim]{t('status.empty')}[/dim]"
+        lang_label = language_name(get_language())
+        console.print(f"  {t('label.provider')} {settings.provider}  |  {t('label.model')} {settings.model}  |  Key: {key_status}  |  🌐 {lang_label}")
+        console.print(f"  {t('label.temp_short')} {settings.temperature}  |  {t('label.top_p')} {settings.top_p if settings.top_p is not None else '–'}  |  {t('label.tokens')} {settings.max_tokens}")
+        console.print(f"  {t('label.language')} {settings.default_language}  |  {t('label.chapters')} {settings.default_chapters}  |  {t('label.pace')} {settings.story_pace}")
+        console.print(f"  {t('label.detail_level')} {settings.detail_level}  |  {t('label.compliance')} {settings.compliance_threshold}%  |  {t('label.log_level')} {settings.log_level}")
+        console.print(f"  Export: {ek}  |  {t('label.cache')} {'✓' if settings.cache_responses else '✗'}  |  {t('label.backup')} {'✓' if settings.backup_enabled else '✗'}")
 
         choice = choose("", [
-            "📋  Übersicht – Alle Einstellungen anzeigen",
+            t("settings.overview"),
             "───────────────────",
-            "🤖  Provider & Modell",
-            "🎛️   KI-Parameter",
-            "📝  Generierung",
-            "🎨  UI & Logging",
-            "⚙️   Erweitert",
+            t("settings.provider"),
+            t("settings.ai"),
+            t("settings.generation"),
+            t("settings.ui"),
+            t("settings.advanced"),
             "───────────────────",
-            "📂  config/settings.yaml im Editor öffnen",
-            "🔄  Auf Standard zurücksetzen",
-            "↩  Zurück zum Hauptmenü",
+            t("settings.open_yaml"),
+            t("settings.reset"),
+            t("settings.back"),
         ])
 
         if choice in (1, 7):
@@ -1150,38 +1158,38 @@ async def settings_menu():
 
 
 # ─────────────────────────────────────────────────────────────
-# Sub-Menüs
+# Sub-Menüs (alle via t() übersetzbar)
 # ─────────────────────────────────────────────────────────────
 
 def _on_off(b: bool) -> str:
-    return "[green]AN[/green]" if b else "[red]AUS[/red]"
+    return f"[green]{t('status.on')}[/green]" if b else f"[red]{t('status.off')}[/red]"
 
 
 async def _settings_provider_menu():
     """Sub-Menu: Provider, Modell, API-Key, URL, Fallbacks, Discovery."""
     while True:
-        section("🤖 Provider & Modell")
+        section(t("settings.provider.title"))
         has_key = _has_api_key()
-        key_status = "[green]✓ gesetzt[/green]" if has_key else "[red]✗ fehlt[/red]"
-        console.print(f"  [bold]Provider:[/bold]   {settings.provider}")
-        console.print(f"  [bold]Modell:[/bold]     {settings.model}")
-        console.print(f"  [bold]API-Key:[/bold]    {key_status}")
+        key_status = f"[green]{t('status.set')}[/green]" if has_key else f"[red]{t('status.unset')}[/red]"
+        console.print(f"  {t('label.provider')}   {settings.provider}")
+        console.print(f"  {t('label.model')}     {settings.model}")
+        console.print(f"  {t('label.api_key')}    {key_status}")
         if settings.custom_base_url:
-            console.print(f"  [bold]Custom-URL:[/bold] {settings.custom_base_url}")
+            console.print(f"  {t('label.custom_url')} {settings.custom_base_url}")
         if settings.fallback_models_str.strip():
             n = len([m for m in settings.fallback_models_str.split(",") if m.strip()])
-            console.print(f"  [bold]Fallbacks:[/bold]  {n} Modelle konfiguriert")
+            console.print(f"  {t('label.fallbacks')}  {n} Modelle konfiguriert")
         else:
-            console.print(f"  [bold]Fallbacks:[/bold]  [dim]Provider-Default[/dim]")
+            console.print(f"  {t('label.fallbacks')}  [dim]{t('status.provider_default')}[/dim]")
 
         choice = choose("", [
-            "Provider wechseln",
-            "Modell wechseln",
-            "API-Key eingeben / ändern",
-            "Custom-Base-URL (openai_compat / Proxies)",
-            "Fallback-Modelle konfigurieren",
-            "🔃  Modelle neu laden (Live-Discovery, TTL ignorieren)",
-            "↩  Zurück zu Einstellungen",
+            t("settings.provider.change"),
+            t("settings.provider.model"),
+            t("settings.provider.api_key"),
+            t("settings.provider.custom_url"),
+            t("settings.provider.fallback"),
+            t("settings.provider.refresh"),
+            t("settings.back_to_settings"),
         ])
         if choice == 0: _pick_provider()
         elif choice == 1: _pick_model()
@@ -1195,20 +1203,24 @@ async def _settings_provider_menu():
 async def _settings_ai_menu():
     """Sub-Menu: Sampling-Parameter, Compliance, Retries."""
     while True:
-        section("🎛️ KI-Parameter")
-        console.print(f"  [bold]Temperature:[/bold]    {settings.temperature}")
-        console.print(f"  [bold]Max-Tokens:[/bold]     {settings.max_tokens}")
-        console.print(f"  [bold]Top-P:[/bold]          {settings.top_p if settings.top_p is not None else '[dim]aus[/dim]'}")
-        console.print(f"  [bold]Frequency-Pen:[/bold]  {settings.frequency_penalty if settings.frequency_penalty is not None else '[dim]aus[/dim]'}")
-        console.print(f"  [bold]Presence-Pen:[/bold]   {settings.presence_penalty if settings.presence_penalty is not None else '[dim]aus[/dim]'}")
-        console.print(f"  [bold]Compliance:[/bold]     {settings.compliance_threshold}%")
-        console.print(f"  [bold]Max-Retries:[/bold]    {settings.max_retries}")
+        section(t("settings.ai.title"))
+        off = f"[dim]{t('status.disabled')}[/dim]"
+        top_p_v = settings.top_p if settings.top_p is not None else off
+        freq_v = settings.frequency_penalty if settings.frequency_penalty is not None else off
+        pres_v = settings.presence_penalty if settings.presence_penalty is not None else off
+        console.print(f"  {t('label.temperature')}    {settings.temperature}")
+        console.print(f"  {t('label.max_tokens')}     {settings.max_tokens}")
+        console.print(f"  {t('label.top_p')}          {top_p_v}")
+        console.print(f"  {t('label.freq_pen')}  {freq_v}")
+        console.print(f"  {t('label.pres_pen')}   {pres_v}")
+        console.print(f"  {t('label.compliance')}     {settings.compliance_threshold}%")
+        console.print(f"  {t('label.retries')}    {settings.max_retries}")
 
         choice = choose("", [
-            "AI-Parameter bearbeiten (Temp, Top-P, Penalties)",
-            "Compliance-Schwelle setzen (0–100%)",
-            "Max. Retries setzen",
-            "↩  Zurück zu Einstellungen",
+            t("settings.ai.edit"),
+            t("settings.ai.compliance"),
+            t("settings.ai.retries"),
+            t("settings.back_to_settings"),
         ])
         if choice == 0: _edit_ai_params()
         elif choice == 1: _set_compliance_threshold()
@@ -1219,29 +1231,31 @@ async def _settings_ai_menu():
 async def _settings_generation_menu():
     """Sub-Menu: Sprache, Kapitel, Tempo, Detailgrad, Toggles, Export."""
     while True:
-        section("📝 Generierung")
-        console.print(f"  [bold]Sprache:[/bold]      {settings.default_language}")
-        console.print(f"  [bold]Kapitel:[/bold]      {settings.default_chapters}")
-        console.print(f"  [bold]Tempo:[/bold]        {settings.story_pace}")
-        console.print(f"  [bold]Detailgrad:[/bold]   {settings.detail_level}")
-        console.print(f"  [bold]Kapitel-Delay:[/bold] {_on_off(settings.chapter_delay_enabled)}")
-        console.print(f"  [bold]Extended Think:[/bold] {_on_off(settings.use_extended_thinking)}")
-        console.print(f"  [bold]Backup:[/bold]       {_on_off(settings.backup_enabled)}")
-        console.print(f"  [bold]Auto-Export:[/bold]  {_on_off(settings.auto_export)}")
-        console.print(f"  [bold]Auto-Open:[/bold]    {_on_off(settings.auto_open_after_export)}")
-        console.print(f"  [bold]Export-Formate:[/bold] {', '.join(settings.export_formats) or '[dim]keine[/dim]'}")
-        console.print(f"  [bold]Modell-Wizard:[/bold] {_on_off(settings.wizard_model_picker)}")
+        section(t("settings.generation.title"))
+        none_v = f"[dim]{t('status.none')}[/dim]"
+        export_v = ", ".join(settings.export_formats) or none_v
+        console.print(f"  {t('label.language')}      {settings.default_language}")
+        console.print(f"  {t('label.chapters')}      {settings.default_chapters}")
+        console.print(f"  {t('label.pace')}        {settings.story_pace}")
+        console.print(f"  {t('label.detail_level')}   {settings.detail_level}")
+        console.print(f"  {t('label.delay')} {_on_off(settings.chapter_delay_enabled)}")
+        console.print(f"  {t('label.thinking')} {_on_off(settings.use_extended_thinking)}")
+        console.print(f"  {t('label.backup')}       {_on_off(settings.backup_enabled)}")
+        console.print(f"  {t('label.auto_export')}  {_on_off(settings.auto_export)}")
+        console.print(f"  {t('label.auto_open')}    {_on_off(settings.auto_open_after_export)}")
+        console.print(f"  {t('label.export_formats')} {export_v}")
+        console.print(f"  {t('label.wizard_picker')} {_on_off(settings.wizard_model_picker)}")
 
         choice = choose("", [
-            "Generierung bearbeiten (Sprache, Kapitel, Tempo, Detailgrad)",
-            "Kapitel-Delay (2s) an/aus",
-            "Extended Thinking an/aus",
-            "Backup vor Generation an/aus",
-            "Auto-Export an/aus",
-            "Auto-Open nach Export an/aus",
-            "Export-Formate wählen",
-            "Modell-Auswahl im Wizard an/aus",
-            "↩  Zurück zu Einstellungen",
+            t("settings.generation.edit"),
+            t("settings.generation.delay"),
+            t("settings.generation.thinking"),
+            t("settings.generation.backup"),
+            t("settings.generation.auto_export"),
+            t("settings.generation.auto_open"),
+            t("settings.generation.export_formats"),
+            t("settings.generation.wizard_picker"),
+            t("settings.back_to_settings"),
         ])
         if choice == 0: _edit_generation_params()
         elif choice == 1: _toggle_chapter_delay()
@@ -1255,44 +1269,88 @@ async def _settings_generation_menu():
 
 
 async def _settings_ui_menu():
-    """Sub-Menu: Log-Level, Token/Kosten-Anzeige, Beenden-Bestätigung."""
+    """Sub-Menu: Log-Level, Token/Kosten-Anzeige, Beenden-Bestätigung, Sprache."""
     while True:
-        section("🎨 UI & Logging")
-        console.print(f"  [bold]Log-Level:[/bold]       {settings.log_level}")
-        console.print(f"  [bold]Token-Anzeige:[/bold]   {_on_off(settings.show_token_count)}")
-        console.print(f"  [bold]Kosten-Anzeige:[/bold]  {_on_off(settings.show_cost_estimate)}")
-        console.print(f"  [bold]Beenden-Bestätigung:[/bold] {_on_off(settings.confirm_quit)}")
+        section(t("settings.ui.title"))
+        console.print(f"  {t('label.log_level')}       {settings.log_level}")
+        console.print(f"  {t('label.tokens')}   {_on_off(settings.show_token_count)}")
+        console.print(f"  {t('label.cache')}  {_on_off(settings.show_cost_estimate)}")
+        console.print(f"  Beenden-Bestätigung {_on_off(settings.confirm_quit)}")
+        console.print(f"  🌐 Sprache:           {language_name(get_language())}")
 
         choice = choose("", [
-            "UI bearbeiten (Log-Level)",
-            "Token-Anzeige an/aus",
-            "Kosten-Schätzung an/aus",
-            "Beenden-Bestätigung an/aus",
-            "↩  Zurück zu Einstellungen",
+            t("settings.ui.edit"),
+            t("settings.ui.show_tokens"),
+            t("settings.ui.show_cost"),
+            t("settings.ui.confirm_quit"),
+            t("settings.ui.language"),
+            t("settings.back_to_settings"),
         ])
         if choice == 0: _edit_ui_params()
         elif choice == 1: _toggle_show_tokens()
         elif choice == 2: _toggle_show_cost()
         elif choice == 3: _toggle_confirm_quit()
-        elif choice == 4: break
+        elif choice == 4: _change_language()
+        elif choice == 5: break
 
 
 async def _settings_advanced_menu():
     """Sub-Menu: Timeout, Cache, Cache-Größe."""
     while True:
-        section("⚙️ Erweitert")
-        console.print(f"  [bold]Request-Timeout:[/bold]  {settings.request_timeout}s")
-        console.print(f"  [bold]AI-Cache:[/bold]         {_on_off(settings.cache_responses)}")
-        console.print(f"  [bold]Max. Cache-Größe:[/bold] {settings.max_cache_size_mb} MB")
+        section(t("settings.advanced.title"))
+        console.print(f"  {t('label.timeout')}  {settings.request_timeout}s")
+        console.print(f"  {t('label.cache')}         {_on_off(settings.cache_responses)}")
+        console.print(f"  Max. Cache-Größe: {settings.max_cache_size_mb} MB")
 
         choice = choose("", [
-            "Erweitert bearbeiten (Timeout, Cache-Größe)",
-            "AI-Cache an/aus",
-            "↩  Zurück zu Einstellungen",
+            t("settings.advanced.edit"),
+            t("settings.advanced.cache"),
+            t("settings.back_to_settings"),
         ])
         if choice == 0: _edit_advanced_params()
         elif choice == 1: _toggle_cache()
         elif choice == 2: break
+
+
+# ─────────────────────────────────────────────────────────────
+# Language switcher
+# ─────────────────────────────────────────────────────────────
+
+def _change_language():
+    """Let the user pick the UI language and persist the choice."""
+    section(t("language.choose"))
+    langs = available_languages()
+    labels = [f"{language_name(l)} ({l})" for l in langs]
+    cur_idx = langs.index(get_language()) if get_language() in langs else 0
+    console.print(f"  [dim]{t('language.current', name=language_name(get_language()))}[/dim]")
+    console.print()
+    for i, lbl in enumerate(labels, 1):
+        marker = " ←" if i - 1 == cur_idx else ""
+        console.print(f"  [cyan]{i}[/cyan]. {lbl}{marker}")
+    console.print()
+    try:
+        raw = _read_line("  Deine Wahl (Nummer): ")
+    except (KeyboardInterrupt, EOFError):
+        return
+    raw = raw.strip()
+    if raw.isdigit():
+        idx = int(raw) - 1
+        if 0 <= idx < len(langs):
+            new_lang = langs[idx]
+            if set_language(new_lang):
+                # Persist in settings
+                # Load settings.yaml to store ui.language
+                try:
+                    from brokus.utils.settings_loader import load_settings, save_settings
+                    cfg = load_settings()
+                    cfg.setdefault("ui", {})["language"] = new_lang
+                    save_settings(cfg)
+                except Exception:
+                    pass
+                console.print(f"  [green]{t('language.changed', name=language_name(new_lang))}[/green]")
+            else:
+                console.print(f"  [red]{t('common.error_prefix')}{new_lang}[/red]")
+    pause()
 
 
 def _pick_provider():

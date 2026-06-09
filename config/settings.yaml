@@ -327,6 +327,7 @@ ui:
   theme: dark
   animations: true
   log_level: "INFO"             # "DEBUG" | "INFO" | "WARNING" | "ERROR"
+  language: "de"                # UI-Sprache: "de" | "en" | "fr" | "es" | "it"
   show_token_count: true        # Token-Verbrauch anzeigen
   show_cost_estimate: true      # Geschätzte Kosten anzeigen
   progress_style: "bar"         # "bar" | "spinner" | "dots"
