@@ -137,6 +137,10 @@ PROVIDER_LABELS = {
         "name": {"de": "Zhipu (GLM / z.ai)", "en": "Zhipu (GLM / z.ai)", "fr": "Zhipu (GLM / z.ai)", "es": "Zhipu (GLM / z.ai)", "it": "Zhipu (GLM / z.ai)", "nl": "Zhipu (GLM / z.ai)"},
         "note": {"de": "Top chinesisches Modell, mehrsprachig", "en": "Top Chinese model, multilingual", "fr": "Meilleur modèle chinois, multilingue", "es": "El mejor modelo chino, multilingüe", "it": "Miglior modello cinese, multilingue", "nl": "Top Chinees model, meertalig"},
     },
+    "mammouth": {
+        "name": {"de": "Mammouth AI", "en": "Mammouth AI", "fr": "Mammouth AI", "es": "Mammouth AI", "it": "Mammouth AI", "nl": "Mammouth AI"},
+        "note": {"de": "OpenAI-kompatibel, Top-Modelle, Embeddings, Aliase", "en": "OpenAI-compatible, top models, embeddings, aliases", "fr": "Compatible OpenAI, meilleurs modèles, embeddings, alias", "es": "Compatible con OpenAI, mejores modelos, embeddings, alias", "it": "Compatibile OpenAI, migliori modelli, embeddings, alias", "nl": "OpenAI-compatibel, topmodellen, embeddings, aliassen"},
+    },
     "openai_compat": {
         "name": {"de": "🔧 Eigener OpenAI-Endpunkt", "en": "🔧 Custom OpenAI Endpoint", "fr": "🔧 Endpoint OpenAI personnalisé", "es": "🔧 Endpoint OpenAI personalizado", "it": "🔧 Endpoint OpenAI personalizzato", "nl": "🔧 Aangepaste OpenAI-endpoint"},
         "note": {"de": "Beliebiger OpenAI-kompatibler Endpunkt (vLLM, TabbyAPI, LiteLLM-Proxy, ...)", "en": "Any OpenAI-compatible endpoint (vLLM, TabbyAPI, LiteLLM Proxy, ...)", "fr": "Tout endpoint compatible OpenAI (vLLM, TabbyAPI, LiteLLM Proxy, ...)", "es": "Cualquier endpoint compatible con OpenAI (vLLM, TabbyAPI, LiteLLM Proxy, ...)", "it": "Qualsiasi endpoint compatibile OpenAI (vLLM, TabbyAPI, LiteLLM Proxy, ...)", "nl": "Elke OpenAI-compatibele endpoint (vLLM, TabbyAPI, LiteLLM Proxy, ...)"},

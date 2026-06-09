@@ -72,6 +72,7 @@ class ModelDiscovery:
         "xai", "fireworks", "cerebras", "sambanova", "novita", "deepinfra",
         "github_models", "replicate", "anyscale", "writer", "reka", "ai21",
         "moonshot", "zhipu", "nvidia", "huggingface", "openai_compat",
+        "mammouth",
     }
 
     # Provider that uses Ollama's own /api/tags endpoint.

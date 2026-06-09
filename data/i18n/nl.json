@@ -247,5 +247,7 @@
   "help.passphrase_desc": "Master-passphrase voegt een extra wachtwoordlaag toe om API-sleutels te beschermen.",
   "help.navigation": "Navigatie",
   "help.nav_numbers": "Typ altijd een getal en druk op Enter om een optie te kiezen.",
-  "help.nav_ctrl_c": "Ctrl+C breekt elke invoer onmiddellijk af."
+  "help.nav_ctrl_c": "Ctrl+C breekt elke invoer onmiddellijk af.",
+  "provider.mammouth.name": "Mammouth AI",
+  "provider.mammouth.note": "OpenAI-compatibel, topmodellen, embeddings, aliassen"
 }

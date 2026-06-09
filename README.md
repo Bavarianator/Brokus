@@ -52,7 +52,8 @@ Novita · DeepInfra · Together<br>
 Fireworks · SambaNova<br>
 NVIDIA NIM · Replicate<br>
 Anyscale · Reka · Writer<br>
-Moonshot (Kimi) · Zhipu (GLM)
+Moonshot (Kimi) · Zhipu (GLM)<br>
+<b>Mammouth AI</b> – Top-Modelle<br>
 </td><td>
 <b>OpenRouter</b> – 200+ models with one key<br>
 <b>GitHub Models</b> – Free (rate-limited)<br>
@@ -484,6 +485,7 @@ Overrides selected values from settings.yaml – useful for OpenRouter-specific 
 export OPENROUTER_API_KEY="sk-or-..."
 export ANTHROPIC_API_KEY="sk-ant-..."
 export OPENAI_API_KEY="sk-..."
+export MAMMOUTH_API_KEY="sk-..."
 
 # Master passphrase (optional – for encrypted secrets)
 export BROKUS_MASTER_PASSWORD="your-secure-passphrase"

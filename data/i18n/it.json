@@ -247,5 +247,7 @@
   "settings.stage_models.characters": "Personaggi",
   "settings.stage_models.chapter_plan": "Piano capitoli",
   "settings.stage_models.chapter": "Scrittura capitoli",
-  "settings.stage_models.reset": "Reimpostare tutti i modelli di fase?"
+  "settings.stage_models.reset": "Reimpostare tutti i modelli di fase?",
+  "provider.mammouth.name": "Mammouth AI",
+  "provider.mammouth.note": "Compatibile OpenAI, migliori modelli, embeddings, alias"
 }

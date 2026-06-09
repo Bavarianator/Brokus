@@ -219,6 +219,41 @@ PROVIDER_REGISTRY["azure_openai"] = ProviderConfig(
     features="DSGVO-konform, EU-Hosting",
 )
 
+PROVIDER_REGISTRY["mammouth"] = ProviderConfig(
+    key="mammouth",
+    name="Mammouth AI",
+    base_url="https://api.mammouth.ai/v1",
+    api_key_env="MAMMOUTH_API_KEY",
+    library="openai",
+    models=[
+        "gpt-5.5",
+        "gpt-5.4",
+        "gpt-5.4-mini",
+        "gpt-5.4-nano",
+        "gpt-5.3-chat",
+        "gpt-5.1",
+        "deepseek-v4-flash",
+        "deepseek-v4-pro",
+        "claude-haiku-4-5",
+        "claude-sonnet-4-6",
+        "claude-opus-4.7",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-3-flash-preview",
+        "gemini-3.1-pro-preview",
+        "llama-4-maverick",
+        "llama-4-scout",
+        "kimi-k2.6",
+        "grok-4.3",
+        "mistral-medium-3.1",
+        "mistral-small-2603",
+        "glm-5.1",
+        "sonar-pro",
+        "sonar-deep-research",
+    ],
+    cost_info="0.14–30$ / 1M Tokens",
+    features="OpenAI-kompatibel, Top-Modelle, Embeddings, Aliase",
+)
+
 PROVIDER_REGISTRY["perplexity"] = ProviderConfig(
     key="perplexity",
     name="Perplexity AI",

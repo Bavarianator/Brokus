@@ -247,5 +247,7 @@
   "settings.cloud.toggle": "Toggle cloud upload on/off",
   "settings.cloud.auto_toggle": "Toggle auto-upload on/off",
   "settings.cloud.setup": "🛠  Configure cloud providers",
-  "settings.cloud.status": "📡  Show connection status"
+  "settings.cloud.status": "📡  Show connection status",
+  "provider.mammouth.name": "Mammouth AI",
+  "provider.mammouth.note": "OpenAI-compatible, top models, embeddings, aliases"
 }
