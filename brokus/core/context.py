@@ -62,7 +62,7 @@ class StoryContextBuilder:
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
         if not paragraphs:
             return ""
-        return paragraphs[-1][:300]
+        return paragraphs[-1][:600]
 
     def _extract_key_events(self, text: str) -> list[str]:
         """Extract key events from chapter text using heuristics.
