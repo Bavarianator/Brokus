@@ -31,7 +31,7 @@ from typing import Optional
 
 _I18N_DIR = Path("data/i18n")
 _DEFAULT_LANG = "de"
-_AVAILABLE = ("de", "en", "fr", "es", "it")
+_AVAILABLE = ("de", "en", "fr", "es", "it", "nl")
 
 # In-memory cache: { lang: { key: value } }
 _TRANSLATIONS: dict[str, dict[str, str]] = {}
@@ -115,6 +115,7 @@ def language_name(code: str) -> str:
         "fr": "Français",
         "es": "Español",
         "it": "Italiano",
+        "nl": "Nederlands",
     }
     return names.get(code, code)
 

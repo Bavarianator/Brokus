@@ -168,6 +168,20 @@ class SettingsScreen(Screen):
                 yield Static("", classes="spacer")
                 yield Static("🎨 UI & Logging", classes="subsection-title")
 
+                yield Static("🌐 UI-Sprache (UI Language):", classes="form-label")
+                yield Select(
+                    [
+                        ("🇩🇪 Deutsch", "de"),
+                        ("🇬🇧 English", "en"),
+                        ("🇫🇷 Français", "fr"),
+                        ("🇪🇸 Español", "es"),
+                        ("🇮🇹 Italiano", "it"),
+                    ],
+                    id="select-ui-language",
+                    value="de",
+                )
+                yield Static("Hinweis: Sprache greift erst nach Neustart der TUI.", classes="form-hint")
+
                 yield Static("Theme:", classes="form-label")
                 yield Select(
                     [
@@ -426,6 +440,17 @@ class SettingsScreen(Screen):
             self.query_one("#switch-confirm-quit", Switch).value = ui.get("confirm_quit", True)
         except Exception:
             pass
+        # UI-Sprache: setze aktiv + zeige im Select
+        ui_lang = ui.get("language") or "de"
+        try:
+            from brokus.utils.i18n import set_language as _i18n_set
+            _i18n_set(ui_lang)
+        except Exception:
+            pass
+        try:
+            self.query_one("#select-ui-language", Select).value = ui_lang
+        except Exception:
+            pass
 
     def _read_yaml(self, config_path: Path) -> dict:
         """Synchronous YAML read for executor."""
@@ -537,6 +562,10 @@ class SettingsScreen(Screen):
             log_level = str(self.query_one("#select-log-level", Select).value or "INFO")
         except Exception:
             log_level = "INFO"
+        try:
+            ui_language = str(self.query_one("#select-ui-language", Select).value or "de")
+        except Exception:
+            ui_language = "de"
 
         settings = {
             "ai": {
@@ -572,6 +601,7 @@ class SettingsScreen(Screen):
                 "theme": self.query_one("#select-theme", Select).value or "dark",
                 "animations": animations,
                 "log_level": log_level,
+                "language": ui_language,
                 "show_token_count": show_tokens,
                 "show_cost_estimate": show_cost,
                 "confirm_quit": confirm_quit,
