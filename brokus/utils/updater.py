@@ -204,7 +204,7 @@ async def check_for_updates() -> UpdateStatus:
     result.release_notes = release_notes
 
     # Versionen vergleichen: erst Semver, dann String
-    current_semver = _parse_semver(current_version)
+    current_semver = _parse_semver(result.current_version)
     latest_semver = _parse_semver(latest_ver)
 
     if current_semver == (0, 0, 0):
@@ -218,10 +218,10 @@ async def check_for_updates() -> UpdateStatus:
     elif latest_semver is None and current_semver is not None:
         # Release hat keinen Semver-Tag (z.B. "ai"), aber lokale Version schon
         # → nur als Update betrachten, wenn der Tag-Name anders ist
-        result.is_update_available = (latest_ver != current_version)
+        result.is_update_available = (latest_ver != result.current_version)
     else:
         # Beide kein Semver oder nur latest hat Semver → String-Vergleich
-        result.is_update_available = (latest_ver != current_version)
+        result.is_update_available = (latest_ver != result.current_version)
 
     return result
 

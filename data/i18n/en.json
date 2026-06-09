@@ -492,7 +492,6 @@
   "provider.zhipu.note": "Top Chinese model, multilingual",
   "provider.openai_compat.name": "🔧 Custom OpenAI Endpoint",
   "provider.openai_compat.note": "Any OpenAI-compatible endpoint (vLLM, TabbyAPI, LiteLLM Proxy, ...)",
-  "__test_marker__": "newly added",
   "settings.master_passphrase": "🔐  Set / change master passphrase",
   "label.cost": "Cost:",
   "label.confirm_quit": "Confirm quit:",
@@ -541,5 +540,18 @@
   "help.nav_enter": "Empty input (Enter) often means „Cancel“ or „Back“.",
   "help.nav_ctrl_c": "Ctrl+C immediately aborts any input.",
   "easter_egg.42.title": "🥚  Easter Egg",
-  "easter_egg.42.body": "\"42\" – The ultimate answer to the question of life, the universe and everything.\n\n– Deep Thought, after 7.5 million years of computation\n\n🐬  Don't worry – brokus will help you write a book explaining the answer."
+  "easter_egg.42.body": "\"42\" – The ultimate answer to the question of life, the universe and everything.\n\n– Deep Thought, after 7.5 million years of computation\n\n🐬  Don't worry – brokus will help you write a book explaining the answer.",
+  "action.update_checking": "🔍 Checking for updates...",
+  "action.update_current": "✅ Brokus is up to date (v{version}).",
+  "action.update_available": "📦 Update available: v{latest}",
+  "action.update_confirm": "📦 Install update now?",
+  "action.update_installing": "⏳ Installing update (git pull + pip install)...",
+  "action.update_success": "✅ Update to v{version} successful! Please restart.",
+  "action.update_failed": "❌ Update failed: {error}",
+  "action.update_release_notes": "Release notes:",
+  "action.update_release_url": "Release page: {url}",
+  "section.update": "🔄 Update Check",
+  "settings.advanced.update": "🔄  Check & install update",
+  "label.current_version": "Current version:",
+  "label.latest_version": "Latest version:"
 }
