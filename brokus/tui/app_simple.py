@@ -179,6 +179,7 @@ class Settings:
     cloud_enabled: bool = False
     cloud_auto_upload: bool = False
     # ── Advanced ──
+    auto_update_enabled: bool = True  # Startup-Auto-Update
     request_timeout: int = 300
     cache_responses: bool = True
     max_cache_size_mb: int = 500
@@ -284,7 +285,8 @@ class Settings:
                           "backup_enabled", "show_token_count", "show_cost_estimate",
                           "confirm_quit", "cache_responses",
                           "cloud_enabled", "cloud_auto_upload",
-                          "disable_fallback_chains"):
+                          "disable_fallback_chains",
+                          "auto_update_enabled"):
                     if k in data:
                         setattr(self, k, bool(data[k]))
             except Exception:
@@ -572,32 +574,51 @@ async def init():
 # Startup Update Check (non-blocking)
 # ─────────────────────────────────────────────────────────────
 
-async def _startup_update_check():
-    """Check for updates and show a short, non-blocking notification.
+async def _startup_auto_update():
+    """Background check + auto-install on startup.
 
-    Only displays output when an update is actually available.
+    Checks for updates and auto-installs if found.
+    Inner timeouts (10s check + 300s install) prevent hanging.
+    Shows status messages during install and a result notification.
     Errors are logged but not shown to the user (noise reduction).
     """
-    from brokus.utils.updater import check_for_updates
+    if not settings.auto_update_enabled:
+        log.debug("Auto-update disabled via settings")
+        return
+
+    from brokus.utils.updater import auto_update
+
+    # Kurze Statusmeldung – user sieht dass was passiert
+    console.print("  [dim]🔄 Checking for updates...[/dim]")
 
     try:
-        status = await asyncio.wait_for(check_for_updates(), timeout=5.0)
-    except asyncio.TimeoutError:
-        log.debug("Startup update check timed out")
-        return
+        result = await auto_update()
     except Exception as e:
-        log.debug(f"Startup update check failed: {e}")
+        log.debug(f"Startup auto-update failed: {e}")
         return
 
-    if status.is_update_available:
+    if not result.checked:
+        return
+
+    if result.update_successful:
         console.print()
         console.print(Panel(
-            f"[bold green]{t('action.update_available', latest=status.latest_version)}[/bold green]\n"
-            f"[dim]{t('label.current_version')} v{status.current_version}[/dim]\n"
+            f"[bold green]🔄 Auto-Update: v{result.previous_version} → v{result.new_version} ✅[/bold green]\n"
+            f"[dim]Neustart empfohlen – restarte brokus für die neue Version.[/dim]",
+            title="🔄 Auto-Update",
+            border_style="green",
+            padding=(0, 1),
+        ))
+        console.print()
+    elif result.update_found and not result.update_successful:
+        console.print()
+        console.print(Panel(
+            f"[bold yellow]🔄 Update v{result.new_version} verfügbar[/bold yellow]\n"
+            f"[dim]Auto-Install fehlgeschlagen: {result.error}[/dim]\n"
             f"\n"
             f"[bold]{t('settings.advanced')} → {t('settings.advanced.update')}[/bold]",
             title="🔄 Update",
-            border_style="green",
+            border_style="yellow",
             padding=(0, 1),
         ))
         console.print()
@@ -617,7 +638,7 @@ async def main_menu():
 
         if _show_update_notification:
             _show_update_notification = False
-            await _startup_update_check()
+            await _startup_auto_update()
 
         has_key = _has_api_key()
         key_status = "[green]✓[/green]" if has_key else "[red]✗[/red]"
@@ -1551,28 +1572,31 @@ async def _settings_ui_menu():
 
 
 async def _settings_advanced_menu():
-    """Sub-Menu: Timeout, Cache, Cache-Größe, Updates, Cloud-Upload."""
+    """Sub-Menu: Timeout, Cache, Cache-Größe, Auto-Update, Cloud-Upload."""
     while True:
         section(t("settings.advanced.title"))
         _settings_table([
             (t("label.timeout"),    f"{settings.request_timeout}s"),
             (t("label.cache"),       _on_off(settings.cache_responses)),
             (t("label.cache_size"),  f"{settings.max_cache_size_mb} MB"),
+            (t("label.auto_update"), _on_off(settings.auto_update_enabled)),
             (t("settings.cloud.title"), _on_off(settings.cloud_enabled)),
         ])
 
         choice = choose("", [
             t("settings.advanced.edit"),
             t("settings.advanced.cache"),
+            t("label.auto_update"),
             t("settings.cloud.title"),
             t("settings.advanced.update"),
             t("settings.back_to_settings"),
         ])
         if choice == 0: _edit_advanced_params()
         elif choice == 1: _toggle_cache()
-        elif choice == 2: await _cloud_settings_menu()
-        elif choice == 3: await _run_update_check()
-        elif choice == 4: break
+        elif choice == 2: _toggle_auto_update()
+        elif choice == 3: await _cloud_settings_menu()
+        elif choice == 4: await _run_update_check()
+        elif choice == 5: break
 
 
 # ─────────────────────────────────────────────────────────────
@@ -2169,6 +2193,19 @@ def _toggle_cache():
         console.print(f"  [dim]Cache aktiv, max. {settings.max_cache_size_mb} MB.[/dim]")
     else:
         console.print("  [dim]Kein Cache – jede Anfrage geht direkt zum Provider (langsamer, teurer).[/dim]")
+    pause()
+
+
+def _toggle_auto_update():
+    """Toggle startup auto-update on/off."""
+    settings.auto_update_enabled = not settings.auto_update_enabled
+    settings.save()
+    status = "[green]AN[/green]" if settings.auto_update_enabled else "[red]AUS[/red]"
+    console.print(f"\n  Auto-Update beim Start: {status}")
+    if settings.auto_update_enabled:
+        console.print("  [dim]Beim nächsten Start wird automatisch nach Updates gesucht und installiert.[/dim]")
+    else:
+        console.print("  [dim]Auto-Update deaktiviert. Du kannst weiterhin manuell unter 'Update checken' aktualisieren.[/dim]")
     pause()
 
 
