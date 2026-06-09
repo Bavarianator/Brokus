@@ -128,21 +128,37 @@ Fantasy · Horror · Science Fiction · Romance · Thriller · Mystery · Histor
 
 ### Installation
 
+#### 🚀 Empfohlen: install.sh (Ein-Befehl-Setup)
+
 ```bash
-# Repository klonen
 git clone https://github.com/Bavarianator/Brokus.git
 cd brokus
+./install.sh                     # Symlink + Dependencies + PATH
+brokus                           # Direkt aufrufbar!
+```
 
-# Dependencies installieren
-pip install -e .
+`install.sh` erledigt alles:
+- Symlinkt `bin/brokus` → `~/.local/bin/brokus`
+- Installiert Python-Dependencies (mit PEP 668 Fallback für Arch Linux)
+- Trägt `~/.local/bin` in die Shell-Config ein (zsh/bash)
 
-# Starten
+#### 📦 Alternativ: pip install
+
+```bash
+pip install -e .                 # Klassische Installation
 brokus
 ```
 
 ```bash
-# Oder direkt via python -m
+# Direkt via python -m (ohne Installation)
 python -m brokus
+```
+
+#### 🗑️ Deinstallieren
+
+```bash
+./install.sh --uninstall         # Entfernt Symlink
+pip uninstall brokus              # Entfernt Python-Paket
 ```
 
 ### First-Run Wizard
@@ -406,7 +422,8 @@ aiohttp>=3.9.0          # Async HTTP
 | **Generation zu langsam** | Cache in Einstellungen aktivieren · Lokales Modell verwenden (Ollama) · Fallback-Modelle konfigurieren |
 | **Kapitel weichen von der Idee ab** | Compliance-Schwelle auf 90+ erhöhen · `detail_level` auf `strict` stellen · DNA-Extraktion prüfen |
 | **Endlosschleife bei Fallback** | Modell in `fallback_models_str` identisch mit Default-Modell → Einstellungen prüfen, Duplikat entfernen |
-| **Update schlägt fehl** | Git-Repository vorhanden? → `git status` prüfen · `pip install -e .` manuell ausführen |
+| **Update schlägt fehl (PEP 668)** | Arch/Manjaro blockiert systemweites `pip install` → `install.sh` nutzt automatisch `--break-system-packages` oder manuell: `pip install --break-system-packages -e .` |
+| **Update schlägt fehl (allgemein)** | Git-Repository vorhanden? → `git status` prüfen · `pip install -e .` manuell ausführen |
 
 ---
 
