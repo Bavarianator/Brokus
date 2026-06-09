@@ -11,7 +11,7 @@
 ██████  ██   ██  ██████  ██   ██  ██████  ███████
   </pre>
   <p><strong>AI-powered book generator – create complete novels in your terminal.</strong></p>
-  <p><em>Three-layer AI architecture · 33+ providers · 33 genres · 6 languages · 6 export formats</em></p>
+  <p><em>Three-layer AI architecture · 33+ providers · 33 genres · 6 languages · 6 export formats · 10+ CLI commands</em></p>
 </div>
 
 ---
@@ -87,14 +87,16 @@ Fantasy · Horror · Science Fiction · Romance · Thriller · Mystery · Histor
 
 ### 🌍 6 Languages (UI & Generation)
 
-| Language | Code | Translation |
-|----------|------|-------------|
-| Deutsch | `de` | Complete |
-| English | `en` | Complete |
-| Français | `fr` | Complete |
-| Español | `es` | Complete |
-| Nederlands | `nl` | Complete |
-| Italiano | `it` | Complete |
+| Language | Code | Translation Status |
+|----------|------|-------------------|
+| Deutsch | `de` | ✅ Complete (244 keys) |
+| English | `en` | ✅ Complete (244 keys) |
+| Français | `fr` | ✅ Complete (244 keys) |
+| Español | `es` | ✅ Complete (244 keys) |
+| Nederlands | `nl` | ✅ Complete (244 keys) |
+| Italiano | `it` | ✅ Complete (244 keys) |
+
+All 6 language files are kept **fully in sync** – unused keys are automatically cleaned up to maintain consistency.
 
 ### 📤 Export Formats
 
@@ -187,6 +189,19 @@ apt install rclone    # Debian/Ubuntu
 - **PEP 668 support**: Automatic `--break-system-packages` fallback on Arch Linux
 - **Source**: GitHub Releases API (with Tags API fallback)
 
+### 🛡️ Fallback Chain Control
+
+Brokus uses **fallback model chains** per pipeline stage to handle rate limits and timeouts. You can control this behavior:
+
+| Setting | Effect |
+|---------|--------|
+| **Enabled** (default) | Each stage tries models from its chain on failure (rate-limit → next model) |
+| **Disabled** | Only the configured primary model is used – no hardcoded fallbacks |
+
+Configure via: `Settings → Generation → [9] Fallback-Ketten deaktivieren`
+
+> Useful when you want predictable costs, or when using local models that never hit rate limits.
+
 ### 📊 Project Management
 
 - All books in a local SQLite database (`data/projects.db`)
@@ -200,6 +215,22 @@ apt install rclone    # Debian/Ubuntu
 - `bin/brokus` auto-installs dependencies, creates a symlink, and adds `~/.local/bin` to PATH on first run
 - No package manager, no `pip install` needed – just `./bin/brokus`
 - Also ships `install.sh` as a convenience wrapper for traditional setups
+
+### ⌨️ CLI Command Reference
+
+| Command | Description |
+|---------|-------------|
+| `brokus` | Interactive mode – main menu with all options |
+| `brokus --version` | Show version and exit |
+| `brokus --tui` | (Legacy) Textual TUI mode |
+| `brokus --set-master-password` | Set / rotate master passphrase |
+| `brokus --cloud-setup` | Directly open cloud upload configuration wizard |
+| `brokus --cloud-status` | Show connection status of all configured cloud providers |
+| `BROKUS_NO_CLOUD=1 brokus` | Disable cloud upload prompts for this session |
+| `python -m brokus` | Run without installation |
+| `./bin/brokus` | Auto-installing wrapper – installs deps + creates symlink on first run |
+| `./install.sh --uninstall` | Remove symlink and clean up |
+| `BROKUS_MASTER_PASSWORD="..." brokus` | Use master passphrase from environment |
 
 ---
 
@@ -333,7 +364,7 @@ brokus/
 ├── tui/               # Terminal User Interface
 │   └── app_simple.py  #   Rich-based CLI (panels, tables, colors)
 ├── utils/             # Utility modules
-│   ├── i18n.py        #   Internationalization (6 languages, 460+ keys)
+│   ├── i18n.py        #   Internationalization (6 languages, 244 keys)
 │   ├── crypto.py      #   AES-256 encryption for API keys
 │   ├── updater.py     #   GitHub-based update system
 │   ├── settings_loader.py  # YAML configuration load/save
@@ -346,7 +377,7 @@ brokus/
 │   └── genres.yaml    #   Genre definitions + style hints
 ├── data/              # Runtime data
 │   ├── projects.db    #   SQLite database
-│   ├── i18n/          #   Translation files (6 languages, 460+ keys)
+│   ├── i18n/          #   Translation files (6 languages, 244 keys each)
 │   ├── books/         #   Exported books (created at runtime)
 │   └── backups/       #   Automatic DB backups (created at runtime)
 ├── bin/
