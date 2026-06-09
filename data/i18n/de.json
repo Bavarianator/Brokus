@@ -246,5 +246,7 @@
   "settings.cloud.setup": "🛠  Cloud-Provider einrichten",
   "settings.cloud.status": "📡  Verbindungsstatus anzeigen",
   "easter_egg.42.title": "🥚  Easter Egg",
-  "easter_egg.42.body": "\"42\" – Die ultimative Antwort auf die Frage nach dem Leben, dem Universum und dem Ganzen Rest.\n\n– Deep Thought, nach 7,5 Millionen Jahren Berechnung\n\n🐬  Keine Sorge – brokus hilft dir, ein Buch zu schreiben, das die Antwort erklärt."
+  "easter_egg.42.body": "\"42\" – Die ultimative Antwort auf die Frage nach dem Leben, dem Universum und dem Ganzen Rest.\n\n– Deep Thought, nach 7,5 Millionen Jahren Berechnung\n\n🐬  Keine Sorge – brokus hilft dir, ein Buch zu schreiben, das die Antwort erklärt.",
+  "provider.mammouth.name": "Mammouth AI",
+  "provider.mammouth.note": "OpenAI-kompatibel, Top-Modelle, Embeddings, Aliase"
 }
