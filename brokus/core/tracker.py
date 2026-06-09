@@ -19,18 +19,12 @@ class StoryTracker:
     - Location changes
     """
 
-    def __init__(self, dna: DNAResponse | dict):
+    def __init__(self, dna: DNAResponse):
         self.dna = dna
 
-        # DNAResponse-Objekte haben Attribute, dicts haben .get()
-        if isinstance(dna, DNAResponse):
-            prot = dna.protagonistin if dna.protagonistin.name else dna.protagonist
-            start_age = prot.alter_start
-            elements = dna.pflicht_handlungselemente
-        else:
-            prot = dna.get("protagonistin") or dna.get("protagonist", {})
-            start_age = prot.get("alter_start", prot.get("age", 16))
-            elements = dna.get("pflicht_handlungselemente", [])
+        prot = dna.protagonistin if dna.protagonistin.name else dna.protagonist
+        start_age = prot.alter_start
+        elements = dna.pflicht_handlungselemente
 
         # Tracked state
         self.facts: dict = {
@@ -53,8 +47,6 @@ class StoryTracker:
                 result.append(e)
             elif hasattr(e, "description"):
                 result.append(e.description or e.name or str(e))
-            elif isinstance(e, dict):
-                result.append(e.get("description", str(e)))
             else:
                 result.append(str(e))
         return result
@@ -256,11 +248,8 @@ class StoryTracker:
         return "\n".join(lines)
 
     def _count_dna_elements(self) -> int:
-        """Return the total number of mandatory elements from DNA (DNAResponse or dict)."""
-        if isinstance(self.dna, DNAResponse):
-            return len(self.dna.pflicht_handlungselemente)
-        else:
-            return len(self.dna.get("pflicht_handlungselemente", []))
+        """Return the total number of mandatory elements from DNA."""
+        return len(self.dna.pflicht_handlungselemente)
 
     @property
     def total_mandatory(self) -> int:

@@ -294,7 +294,7 @@ class BookPipeline:
             "status": "completed" if not self._stopped else "stopped",
             "total_chapters": self.context_builder.total_chapters,
             "total_words": self.context_builder.total_words,
-            "dna": dna.model_dump() if isinstance(dna, DNAResponse) else dna,
+            "dna": dna.model_dump(),
             "core_elements": self.extractor.to_dict(core_elements),
             "synopsis": synopsis,
             "characters": characters,
