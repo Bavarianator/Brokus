@@ -167,7 +167,7 @@ class StoryTracker:
         """
         total = len(self.facts["fulfilled_elements"]) + len(self.facts["pending_elements"])
         if total == 0:
-            total = len(self.dna.get("pflicht_handlungselemente", []))
+            total = self._count_dna_elements()
         done = len(self.facts["fulfilled_elements"])
 
         lines = [
@@ -206,7 +206,7 @@ class StoryTracker:
         """Get compact status as dict for TUI updates."""
         total = len(self.facts["fulfilled_elements"]) + len(self.facts["pending_elements"])
         if total == 0:
-            total = len(self.dna.get("pflicht_handlungselemente", []))
+            total = self._count_dna_elements()
         done = len(self.facts["fulfilled_elements"])
 
         return {
@@ -255,11 +255,18 @@ class StoryTracker:
         lines.append("→ Nutze diese Charaktere weiter. Führe neue nur ein, wenn nötig.")
         return "\n".join(lines)
 
+    def _count_dna_elements(self) -> int:
+        """Return the total number of mandatory elements from DNA (DNAResponse or dict)."""
+        if isinstance(self.dna, DNAResponse):
+            return len(self.dna.pflicht_handlungselemente)
+        else:
+            return len(self.dna.get("pflicht_handlungselemente", []))
+
     @property
     def total_mandatory(self) -> int:
         total = len(self.facts["fulfilled_elements"]) + len(self.facts["pending_elements"])
         if total == 0:
-            total = len(self.dna.get("pflicht_handlungselemente", []))
+            total = self._count_dna_elements()
         return total
 
     @property
