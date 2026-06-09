@@ -58,36 +58,167 @@ synopsis_prompt: |
   Schreibe auf {language}.
 
 # ─────────────────────────────────────────────────────────────
+# Stufe 1b: Kernelemente-Extraktion (core_elements_prompt)
+# ─────────────────────────────────────────────────────────────
+core_elements_prompt: |
+  Analysiere die folgende Buchidee und extrahiere die Kernelemente.
+  
+  BUCHIDEE:
+  {book_idea}
+  
+  Extrahiere die folgenden Informationen als JSON (kein Text davor/danach):
+  {
+    "setting": {
+      "world": "...",
+      "location": "...",
+      "time_period": "...",
+      "atmosphere": "..."
+    },
+    "protagonist": {
+      "name": "...",
+      "age": "...",
+      "traits": ["..."],
+      "motivation": "...",
+      "internal_conflict": "..."
+    },
+    "characters": [
+      {
+        "name": "...",
+        "role": "...",
+        "traits": ["..."]
+      }
+    ],
+    "core_conflict": "...",
+    "mandatory_elements": [
+      {
+        "id": "...",
+        "description": "..."
+      }
+    ],
+    "themes": ["..."],
+    "tone": "...",
+    "constraints": ["..."]
+  }
+
+# ─────────────────────────────────────────────────────────────
+# Stufe 2: Charakterprofile (character_prompt)
+# ─────────────────────────────────────────────────────────────
+character_prompt: |
+  Erstelle detaillierte Charakterprofile für die Figuren dieser Geschichte.
+  
+  BUCHIDEE: {book_idea}
+  SYNOPSIS: {synopsis}
+  KERNELEMENTE: {core_elements}
+  
+  WICHTIG: Mindestens der Protagonist und 2-4 Nebenfiguren. Jeder Charakter braucht einen vollständigen Bogen.
+  
+  ANWEISUNGEN ZUM AUSGABEFORMAT – GENAU BEFOLGEN:
+  - Antworte AUSSCHLIESSLICH mit einem JSON-Objekt.
+  - KEIN Text vor dem JSON. KEIN Text nach dem JSON.
+  - KEINE Markdown-Formatierung. KEINE Codeblöcke (```).
+  - KEINE Erklärungen, KEINE Kommentare, NUR das JSON.
+  - Verwende GENAU diese Struktur – kein zusätzliches Feld, keine andere Schachtelung:
+  {
+    "characters": [
+      {
+        "name": "...",
+        "age": 0,
+        "appearance": "...",
+        "personality": "...",
+        "background": "...",
+        "motivation": "...",
+        "internal_conflict": "...",
+        "external_conflict": "...",
+        "relationships": "...",
+        "speech_patterns": "...",
+        "arc": "..."
+      }
+    ]
+  }
+
+# ─────────────────────────────────────────────────────────────
+# Stufe 3: Kapitelplan (chapter_plan_prompt)
+# ─────────────────────────────────────────────────────────────
+chapter_plan_prompt: |
+  Plane {num_chapters} Kapitel für diesen Roman.
+  
+  BUCHIDEE: {book_idea}
+  SYNOPSIS: {synopsis}
+  CHARAKTERE: {characters}
+  KERNELEMENTE: {core_elements}
+  
+  NOCH NICHT VERWENDETE PFLICHTELEMENTE:
+  {pending_elements}
+  
+  WICHTIGE INHALTLICHE VORGABEN:
+  - Verteile die Pflichtelemente sinnvoll über die Kapitel
+  - Jedes Kapitel braucht einen klaren Spannungsbogen
+  - Die Kapitel sollten eine dramatische Kurve ergeben: Einleitung → Steigerung → Höhepunkt → Auflösung
+
+  ANWEISUNGEN ZUM AUSGABEFORMAT – GENAU BEFOLGEN:
+  - Antworte AUSSCHLIESSLICH mit einem JSON-Objekt.
+  - KEIN Text vor dem JSON. KEIN Text nach dem JSON.
+  - KEINE Markdown-Formatierung. KEINE Codeblöcke (```).
+  - KEINE Erklärungen, KEINE Kommentare, NUR das JSON.
+  - Verwende GENAU diese Struktur – kein zusätzliches Feld, keine andere Schachtelung:
+  {
+    "chapters": [
+      {
+        "number": 1,
+        "title": "...",
+        "summary": "...",
+        "elements": ["elem_1", "elem_2"],
+        "characters": ["..."],
+        "setting": "...",
+        "mood": "...",
+        "estimated_words": 2000
+      }
+    ]
+  }
+
+# ─────────────────────────────────────────────────────────────
 # Kapitel-Schreib-Prompt (Verbessert mit mehr Kontext)
 # ─────────────────────────────────────────────────────────────
 chapter_prompt_with_dna: |
-  Du schreibst Kapitel {chapter_number} ("{chapter_title}").
+  Du bist Romanautor und schreibst Kapitel {chapter_number} ("{chapter_title}").
   
-  [BUCH-DNA]
+  ===== BUCH-DNA (UNVERÄNDERLICH) =====
   {dna_block}
   
-  [HANDLUNGSKONTEXT]
+  ===== WELT & THEMEN =====
+  {core_context}
+  
+  ===== HANDLUNGSKONTEXT =====
   Phase: {story_phase}
   Synopsis: {synopsis}
   Bisherige Geschichte: {story_context}
   
-  [DEINE AUFGABE]
-  Schreibe dieses Kapitel (ca. {target_words} Wörter) auf {language}.
-  
-  PFICHTELEMENTE FÜR DIESES KAPITEL:
+  ===== PFICHTELEMENTE FÜR DIESES KAPITEL =====
   {chapter_elements}
   
-  CHARAKTERE:
+  ===== CHARAKTERE =====
   {characters}
   
-  ANWEISUNGEN:
-  1. DNA-TREUE: Die DNA ist Gesetz. Wenn sie sagt, der Ort ist X, ist es X. Wenn sie sagt, Protagonist ist Y Jahre, ist er Y Jahre.
-  2. KONTINUITÄT: Integriere Ereignisse aus dem bisherigen Kontext organisch.
-  3. SPANNUNG: Nutze das aktuelle Ziel (Pflichtelemente), um Spannung zu erzeugen oder den Plot voranzutreiben.
-  4. DETAIL: Wenn Detailgrad 'strikt' ist, keine neuen Elemente erfinden. Wenn 'locker', nutze Freiheit.
+  VOLLSTÄNDIGE CHARAKTERPROFILE:
+  {character_profiles}
+  
+  ===== DEINE AUFGABE =====
+  Schreibe Kapitel {chapter_number} "{chapter_title}" als VOLLSTÄNDIGEN, DETAILLIERTEN ROMANTEXT.
+  Das Kapitel muss MINDESTENS {target_words} WÖRTER umfassen.
+  Sprache: {language}
+  
+  WICHTIGE ANWEISUNGEN:
+  1. LÄNGE: Das Kapitel muss mindestens {target_words} Wörter lang sein. Kurze Texte sind NICHT akzeptabel.
+  2. DNA-TREUE: Halte dich exakt an die Buch-DNA (Protagonist, Setting, Pflichtelemente).
+  3. KONTINUITÄT: Integriere Ereignisse aus der bisherigen Geschichte organisch.
+  4. SPANNUNG: Erzeuge eine fesselnde Szene mit Anfang, Mitte und Höhepunkt.
+  5. DETAIL: Beschreibe Szenen, Dialoge, Gedanken und Emotionen ausführlich.
+  6. QUALITÄT: Lebendige Sprache, "Show, don't tell", keine Füllwörter.
   {chapter_context_extra}
   
-  NACH DEM SCHREIBEN:
-  Beende den Text mit dem ---KAPITEL-REPORT--- Block (wie spezifiziert), um die Konsistenz für das nächste Kapitel zu sichern.
+  WICHTIG: Deine Antwort muss AUSSCHLIESSLICH den Kapiteltext enthalten.
+  KEINE Zusammenfassung, KEIN Report, KEINE Notizen am Ende.
+  NUR der reine Romantext – beginnend mit dem ersten Satz des Kapitels.
   
   Beginne jetzt mit dem Kapiteltext.
+  {target_words} WÖRTER – NICHT KÜRZER!

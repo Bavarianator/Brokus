@@ -171,6 +171,8 @@ class Settings:
     show_token_count: bool = True
     show_cost_estimate: bool = True
     confirm_quit: bool = True
+    # ── Multi-Modell (Stage-spezifische Modelle) ──
+    stage_models: dict[str, str] = field(default_factory=dict)
     # ── Advanced ──
     request_timeout: int = 300
     cache_responses: bool = True
@@ -583,12 +585,12 @@ async def main_menu():
         console.print(status_panel)
 
         choice = choose(t("main.title"), [
-            f"⚡ {t('main.quick_book')}",
-            f"✨ {t('main.master')}",
-            f"📖 {t('main.library')}",
-            f"⚙️  {t('main.settings')}",
-            f"🌐 {t('language.choose')} ({lang_label})",
-            f"🚪 {t('main.quit')}",
+            t("main.quick_book"),
+            t("main.master"),
+            t("main.library"),
+            t("main.settings"),
+            f"{t('language.choose')} ({lang_label})",
+            t("main.quit"),
         ])
 
         if choice == 0:
@@ -880,6 +882,7 @@ async def generate_book(idea: str, title: str, genre_key: str, num_chapters: int
             auto_export=settings.auto_export,
             auto_open_after_export=settings.auto_open_after_export,
             backup_enabled=settings.backup_enabled,
+            stage_models=settings.stage_models,
         )
 
         chapter_count = [0]
@@ -1335,6 +1338,7 @@ async def _settings_provider_menu():
             t("settings.provider.custom_url"),
             t("settings.provider.fallback"),
             t("settings.provider.refresh"),
+            t("settings.stage_models"),
             t("settings.master_passphrase") + ("" if not _has_master_passphrase() else "  ✓"),
             t("settings.back_to_settings"),
         ])
@@ -1344,8 +1348,9 @@ async def _settings_provider_menu():
         elif choice == 3: _set_custom_base_url()
         elif choice == 4: _configure_fallback_models()
         elif choice == 5: _force_refresh_models()
-        elif choice == 6: _set_master_passphrase(reencrypt_after=True)
-        elif choice == 7: break
+        elif choice == 6: _configure_stage_models()
+        elif choice == 7: _set_master_passphrase(reencrypt_after=True)
+        elif choice == 8: break
 
 
 async def _settings_ai_menu():
@@ -1449,7 +1454,7 @@ async def _settings_ui_menu():
 
 
 async def _settings_advanced_menu():
-    """Sub-Menu: Timeout, Cache, Cache-Größe."""
+    """Sub-Menu: Timeout, Cache, Cache-Größe, Updates."""
     while True:
         section(t("settings.advanced.title"))
         _settings_table([
@@ -1461,11 +1466,13 @@ async def _settings_advanced_menu():
         choice = choose("", [
             t("settings.advanced.edit"),
             t("settings.advanced.cache"),
+            t("settings.advanced.update"),
             t("settings.back_to_settings"),
         ])
         if choice == 0: _edit_advanced_params()
         elif choice == 1: _toggle_cache()
-        elif choice == 2: break
+        elif choice == 2: _run_update_check()
+        elif choice == 3: break
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1579,6 +1586,49 @@ def _pick_model():
 
     settings.save()
     console.print(f"\n  [green]✓ Modell: {settings.model}[/green]")
+
+
+def _configure_stage_models():
+    """Configure different models for different pipeline stages."""
+    section(t("settings.stage_models.title"))
+
+    stages = [
+        ("dna", t("settings.stage_models.dna")),
+        ("core_elements", t("settings.stage_models.core_elements")),
+        ("synopsis", t("settings.stage_models.synopsis")),
+        ("characters", t("settings.stage_models.characters")),
+        ("chapter_plan", t("settings.stage_models.chapter_plan")),
+        ("chapter", t("settings.stage_models.chapter")),
+    ]
+
+    console.print("  [dim]Leer lassen = Standard-Modell wird verwendet[/dim]\n")
+
+    for key, label in stages:
+        current = settings.stage_models.get(key, "")
+        default_hint = current if current else t("status.provider_default")
+        console.print(f"  {label}:")
+        console.print(f"    [dim](aktuell: {default_hint})[/dim]")
+        val = ask_text("Modell (Enter = Standard):")
+        if val:
+            settings.stage_models[key] = val.strip()
+        elif key in settings.stage_models:
+            del settings.stage_models[key]
+        console.print()
+
+    # Reset option (mit ask_text statt confirm, um versehentliches Löschen zu vermeiden)
+    if settings.stage_models:
+        reset_val = ask_text(t("settings.stage_models.reset") + " (Enter = abbrechen)")
+        if reset_val and reset_val.strip().lower() in ("yes", "ja", "reset", "zurücksetzen"):
+            settings.stage_models.clear()
+            console.print(f"  [green]{t('action.saved')}[/green]")
+
+    settings.save()
+    if settings.stage_models:
+        console.print(f"  [green]{t('action.saved')}[/green]")
+        for key, model in settings.stage_models.items():
+            label = dict(stages).get(key, key)
+            console.print(f"    • {label}: [bold]{model}[/bold]")
+    pause()
 
 
 def _force_refresh_models():
@@ -2019,6 +2069,63 @@ def _toggle_cache():
         console.print(f"  [dim]Cache aktiv, max. {settings.max_cache_size_mb} MB.[/dim]")
     else:
         console.print("  [dim]Kein Cache – jede Anfrage geht direkt zum Provider (langsamer, teurer).[/dim]")
+    pause()
+
+
+def _run_update_check():
+    """Check for updates and offer to install."""
+    import asyncio
+    from brokus.utils.updater import check_for_updates, perform_update
+
+    section(t("section.update"))
+    console.print("  🔍 Suche nach Updates...")
+
+    try:
+        status = asyncio.run(check_for_updates())
+    except Exception as e:
+        console.print(f"  [red]❌ Update-Check fehlgeschlagen: {e}[/red]")
+        pause()
+        return
+
+    if status.error:
+        console.print(f"  [yellow]⚠ {status.error}[/yellow]")
+        pause()
+        return
+
+    console.print()
+    console.print(f"  [bold]Aktuelle Version:[/bold]  v{status.current_version}")
+    console.print(f"  [bold]Neueste Version:[/bold]  v{status.latest_version}")
+
+    if status.is_update_available:
+        console.print(f"\n  [bold green]📦 Update verfügbar![/bold green]")
+        if status.release_notes:
+            # Show first 10 lines of release notes
+            notes_lines = status.release_notes.strip().split("\n")[:10]
+            console.print(f"  [dim]Release-Notes:[/dim]")
+            for line in notes_lines:
+                console.print(f"    {line}")
+            if len(status.release_notes.strip().split("\n")) > 10:
+                console.print(f"    [dim]... (gekürzt)[/dim]")
+        console.print()
+
+        if confirm(t("action.update_confirm")):
+            console.print()
+            console.print("  ⏳ Update wird installiert (git pull + pip install)...")
+            try:
+                success, msg = asyncio.run(perform_update(status))
+                if success:
+                    console.print(f"  [bold green]✅ {msg}[/bold green]")
+                    console.print("  [dim]Starte brokus neu, um die neue Version zu nutzen.[/dim]")
+                else:
+                    console.print(f"  [red]❌ {msg}[/red]")
+            except Exception as e:
+                console.print(f"  [red]❌ Update fehlgeschlagen: {e}[/red]")
+    else:
+        console.print(f"\n  [green]✅ Brokus ist aktuell (v{status.current_version}).[/green]")
+
+    if status.release_url:
+        console.print(f"\n  [dim]Release-Seite: {status.release_url}[/dim]")
+
     pause()
 
 

@@ -4,11 +4,25 @@ Extracts hard facts from the user's book idea as structured JSON.
 These elements are embedded into EVERY subsequent prompt to prevent drift.
 """
 
+import re
+
 from brokus.ai.client import AIClient, LLMResponseError
+from brokus.ai.schemas import CoreElementsResponse
 from brokus.ai.prompts import PromptLoader
 from brokus.ai.models import CoreElements, Setting, Protagonist, Character, MandatoryElement
-from brokus.ai.schemas import CoreElementsResponse
 from brokus.utils.logger import log
+
+
+# ── Modell-Fallback-Kette (Provider: openrouter) ──
+# Alle Modelle müssen von OpenRouter unterstützt werden.
+# Siehe config/settings.yaml → openrouter.models für die vollständige Liste.
+CORE_ELEMENTS_MODEL_CHAIN: list[str] = [
+    "google/gemini-2.0-flash-exp:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "moonshotai/kimi-k2.6:free",
+    "deepseek/deepseek-chat",
+    "mistralai/mistral-7b-instruct:free",
+]
 
 
 class CoreElementExtractor:
@@ -18,11 +32,15 @@ class CoreElementExtractor:
         self.client = client
         self.prompts = prompts
 
-    async def extract(self, book_idea: str) -> CoreElements:
+    async def extract(self, book_idea: str, model: Optional[str] = None) -> CoreElements:
         """Extract core elements from the user's book idea.
+
+        Probiert nacheinander mehrere Modelle aus (Modell-Fallback-Kette),
+        falls das konfigurierte Modell kein gültiges JSON liefert.
 
         Args:
             book_idea: The user's detailed book description.
+            model: Optional model override for multi-model setups.
 
         Returns:
             CoreElements with all extracted immutable story facts.
@@ -34,22 +52,46 @@ class CoreElementExtractor:
             book_idea=book_idea,
         )
 
-        try:
-            response = await self.client.generate_model(
-                system_prompt=self.prompts.get("system_prompt"),
-                user_prompt=prompt,
-                schema=CoreElementsResponse,
-                temperature=0.3,
-            )
-            elements = self._parse_response(response)
-            log.info(f"Extracted {len(elements.mandatory_elements)} mandatory elements, "
-                     f"{len(elements.characters)} characters",
-                     stage="Kernelemente")
-            return elements
-        except (LLMResponseError, Exception) as e:
-            log.error(f"Failed to parse core elements: {e}", stage="Kernelemente")
-            log.warning("Using fallback with minimal elements", stage="Kernelemente")
-            return self._fallback(book_idea)
+        # Modell-Fallback-Kette aufbauen
+        # 1. Das explizite Stage-Modell (z.B. aus UI ausgewählt)
+        # 2. Alle Modelle aus CORE_ELEMENTS_MODEL_CHAIN, die nicht schon probiert wurden
+        models_to_try: list[str] = []
+        if model:
+            models_to_try.append(model)
+        for m in CORE_ELEMENTS_MODEL_CHAIN:
+            if m not in models_to_try:
+                models_to_try.append(m)
+
+        last_exc: Optional[Exception] = None
+        for m in models_to_try:
+            try:
+                if m != models_to_try[0]:
+                    log.info(f"Retrying core elements with fallback model: {m}", stage="Kernelemente")
+
+                response = await self.client.generate_model(
+                    system_prompt=self.prompts.get("system_prompt"),
+                    user_prompt=prompt,
+                    schema=CoreElementsResponse,
+                    temperature=0.3,
+                    model=m,
+                )
+                elements = self._parse_response(response)
+                log.info(f"Core elements extracted successfully with {m}: "
+                         f"{len(elements.mandatory_elements)} mandatory elements, "
+                         f"{len(elements.characters)} characters",
+                         stage="Kernelemente")
+                return elements
+            except LLMResponseError as e:
+                log.warning(f"Model {m} failed: {e}", stage="Kernelemente")
+                last_exc = e
+            except Exception as e:
+                log.warning(f"Model {m} unexpected error: {type(e).__name__}: {e}", stage="Kernelemente")
+                last_exc = e
+
+        # Alle Modelle fehlgeschlagen → Fallback
+        log.error(f"All models failed for core elements. Last error: {last_exc}", stage="Kernelemente")
+        log.warning("Using sentence-based fallback", stage="Kernelemente")
+        return self._fallback(book_idea)
 
     def _parse_response(self, response: CoreElementsResponse) -> CoreElements:
         """Convert typed CoreElementsResponse into internal CoreElements model."""
@@ -75,11 +117,33 @@ class CoreElementExtractor:
         )
 
     def _fallback(self, book_idea: str) -> CoreElements:
-        """Create minimal core elements as fallback."""
-        words = book_idea.split()
-        first_50 = " ".join(words[:50]) + "..."
+        """Create minimal core elements as fallback.
+
+        Sentence-basiert und sprach-agnostisch (keine Keyword-Listen).
+        Extrahiert den ersten Satz als core_conflict.
+        """
+        text = book_idea.strip()
+
+        # Sätze splitten (funktioniert für Deutsch und Englisch)
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+
+        # Erste 1–2 Sätze als Kernkonflikt (max. ~300 Zeichen)
+        core_conflict = ""
+        for s in sentences:
+            if core_conflict and len(core_conflict) + len(s) > 300:
+                break
+            core_conflict = (core_conflict + " " + s).strip() if core_conflict else s
+        if not core_conflict:
+            core_conflict = text[:300]
+
         return CoreElements(
-            core_conflict=first_50,
+            core_conflict=core_conflict,
+            themes=["Hauptthema aus Buchidee"],
+            tone="neutral",
+            constraints=[],
+            setting=Setting(),
+            protagonist=Protagonist(),
+            characters=[],
             mandatory_elements=[
                 MandatoryElement(id="elem_1", description="Grundidee umsetzen")
             ],

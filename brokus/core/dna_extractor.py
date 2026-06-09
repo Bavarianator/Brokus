@@ -17,8 +17,12 @@ class DNAExtractor:
         self.client = client
         self.prompts = prompts
 
-    async def extract(self, user_idea: str) -> DNAResponse:
+    async def extract(self, user_idea: str, model: Optional[str] = None) -> DNAResponse:
         """Extract the unchangeable book DNA.
+
+        Args:
+            user_idea: The user's book description.
+            model: Optional model override for multi-model setups.
 
         Returns a typed DNAResponse with Pydantic-validated fields.
         """
@@ -32,6 +36,7 @@ class DNAExtractor:
                 user_prompt=prompt,
                 schema=DNAResponse,
                 temperature=0.2,
+                model=model,
             )
             log.info(
                 f"DNA extracted: {len(dna.pflicht_handlungselemente)} "
