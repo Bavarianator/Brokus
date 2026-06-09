@@ -21,7 +21,7 @@ from typing import Optional
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from brokus import __version__ as current_version
+from brokus import __version__ as _fallback_version
 from brokus.utils.logger import log
 
 
@@ -68,6 +68,48 @@ def _parse_semver(version_str: str) -> tuple[int, int, int]:
 def _semver_greater(a: tuple[int, int, int], b: tuple[int, int, int]) -> bool:
     """Return True if a > b (semver comparison)."""
     return a > b
+
+
+def _get_git_tag() -> Optional[str]:
+    """Get the nearest git tag reachable from HEAD (via git describe).
+
+    Returns the tag name (without 'v' prefix), or None if:
+    - Git is not installed
+    - No tags exist
+    - Not a git repository
+
+    Beispiel: Bei Tag "ai" → "ai", bei "v1.0.1" → "1.0.1"
+    """
+    try:
+        root = _get_project_root()
+        result = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip().lstrip("v")
+    except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
+        pass
+    return None
+
+
+def _detect_current_version() -> str:
+    """Detect the current version of brokus.
+
+    Priority:
+    1. Git tag (via `git describe --tags --abbrev=0`)
+    2. __version__ from brokus/__init__.py (Fallback)
+
+    Returns:
+        Version string (e.g. "1.0.0", "ai").
+    """
+    git_tag = _get_git_tag()
+    if git_tag:
+        return git_tag
+    return _fallback_version
 
 
 # ─────────────────────────────────────────────────────────────
@@ -135,11 +177,15 @@ def _fetch_latest_from_github() -> tuple[str, str, str]:
 async def check_for_updates() -> UpdateStatus:
     """Check if a newer version of brokus is available on GitHub.
 
+    Die aktuelle Version wird zuverlässig via Git-Tag ermittelt
+    (git describe --tags --abbrev=0). Nur als Fallback wird die
+    __version__ aus brokus/__init__.py verwendet.
+
     Returns:
         UpdateStatus with current_version, latest_version,
         is_update_available flag, and optional error.
     """
-    result = UpdateStatus(current_version=current_version)
+    result = UpdateStatus(current_version=_detect_current_version())
 
     try:
         latest_ver, release_url, release_notes = await asyncio.to_thread(
@@ -212,48 +258,72 @@ async def perform_update(status: UpdateStatus) -> tuple[bool, str]:
     except Exception as e:
         return False, f"git pull error: {e}"
 
-    # Step 2: pip install -e .
+    # Step 2: pip install -e . (mit Live-Output)
     pip_args = [sys.executable, "-m", "pip", "install", "-e", "."]
     pip_args_fallback = pip_args + ["--break-system-packages"]
 
     for attempt_args, attempt_label in [(pip_args, "pip install"), (pip_args_fallback, "pip install --break-system-packages")]:
+        log.info(f"Updating: {attempt_label}", stage="Update")
         try:
-            log.info(f"Updating: {attempt_label}", stage="Update")
             proc = await asyncio.create_subprocess_exec(
                 *attempt_args,
                 cwd=str(project_root),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+
+            # Output live streamen, damit der User Fortschritt sieht
+            full_stdout = []
+            full_stderr = []
+            if proc.stdout is None or proc.stderr is None:
+                return False, "pip install: konnte keine Ausgabe-Pipes öffnen"
+
+            async def _read_stream(stream, storage):
+                while True:
+                    line = await stream.readline()
+                    if not line:
+                        break
+                    decoded = line.decode("utf-8", errors="replace").rstrip()
+                    if decoded:
+                        log.info(f"  {decoded}", stage="Update")
+                    storage.append(decoded)
+
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(
+                        _read_stream(proc.stdout, full_stdout),
+                        _read_stream(proc.stderr, full_stderr),
+                    ),
+                    timeout=300,
+                )
+            except asyncio.TimeoutError:
+                proc.kill()
+                if attempt_args is pip_args_fallback:
+                    return False, "pip install timed out (300s) — auch mit --break-system-packages"
+                log.info(f"pip install timed out — retrying mit --break-system-packages", stage="Update")
+                continue
+
+            await proc.wait()
+
             if proc.returncode == 0:
                 log.info(f"{attempt_label} OK", stage="Update")
                 return True, f"Update to v{status.latest_version} erfolgreich! Bitte neustarten."
 
-            err_msg = stderr.decode().strip() or stdout.decode().strip()[:200]
+            err_msg = "\n".join(full_stderr or full_stdout)[:500]
 
             # PEP 668 (externally-managed-environment) → Fallback mit --break-system-packages
             if "externally-managed" in err_msg.lower():
                 if attempt_args is pip_args_fallback:
-                    # Zweiter Versuch hat auch nichts gebracht → aufgeben
                     return False, f"pip install failed: {err_msg}"
                 log.info(f"PEP 668 detected — retrying with --break-system-packages", stage="Update")
                 continue
 
-            # Anderer Fehler → abbrechen
             return False, f"pip install failed: {err_msg}"
-        except asyncio.TimeoutError:
-            if attempt_args is pip_args_fallback:
-                return False, "pip install timed out (120s) — auch mit --break-system-packages"
-            log.info(f"pip install timed out — retrying mit --break-system-packages", stage="Update")
-            continue
+
         except Exception as e:
             if attempt_args is pip_args_fallback:
                 return False, f"pip install error: {e}"
             log.info(f"pip error: {e} — retrying mit --break-system-packages", stage="Update")
             continue
 
-    # Beide Versuche erschöpft → Fehler
     return False, "pip install fehlgeschlagen – auch mit --break-system-packages"
-
-    return True, f"Update to v{status.latest_version} erfolgreich! Bitte neustarten."
