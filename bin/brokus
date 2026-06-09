@@ -1,12 +1,31 @@
 #!/usr/bin/env bash
 # brokus – KI-Buchgenerator im Terminal
-# Symlink this file to ~/.local/bin/brokus or /usr/local/bin/brokus
+# Is designed to work from any directory: symlink to ~/.local/bin/brokus
 
 set -e
 
 # Resolve symlinks first, then find the project directory
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+PYTHON="${BROKUS_PYTHON:-python3}"
 
-# Run via python -m brokus
+# ── Auto-Install: falls Dependencies fehlen, biete Installation an ──
+if ! "$PYTHON" -c "import rich" 2>/dev/null; then
+    echo "📦 brokus: Python-Dependencies fehlen." >&2
+    
+    if [[ -f "$SCRIPT_DIR/install.sh" && -t 0 ]]; then
+        echo "  Starte Installations-Assistenten..." >&2
+        echo >&2
+        exec bash "$SCRIPT_DIR/install.sh"
+    fi
+    
+    echo >&2
+    echo "  Dependencies installieren mit:" >&2
+    echo "    cd \"$SCRIPT_DIR\" && pip install -e ." >&2
+    echo "    cd \"$SCRIPT_DIR\" && pip install --break-system-packages -e ." >&2
+    echo >&2
+    exit 1
+fi
+
+# ── Start ──
 cd "$SCRIPT_DIR"
-exec python3 -m brokus "$@"
+exec "$PYTHON" -m brokus "$@"
