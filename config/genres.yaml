@@ -1,0 +1,203 @@
+# ─────────────────────────────────────────────────────────────
+# brokus – 33 Genres mit Style-Hints
+# ─────────────────────────────────────────────────────────────
+
+genres:
+  fantasy:
+    name: Fantasy
+    style_hint: |
+      Magische Systeme konsistent und glaubwürdig darstellen.
+      Worldbuilding mit allen Sinnen. Archaische, aber verständliche Sprache.
+      Epische Konflikte, Heldenreise, mythische Atmosphäre.
+  horror:
+    name: Horror
+    style_hint: |
+      Langsam eskalierende Spannung. Dread > Jump Scares.
+      Psychologische Tiefe, unzuverlässige Wahrnehmung.
+      Dunkle, atmosphärische Beschreibungen. Körpersprache betonen.
+  scifi:
+    name: Science Fiction
+    style_hint: |
+      Technologie logisch und konsistent. "Show, don't tell" bei Tech.
+      Gesellschaftliche Implikationen erkunden. Präzise, klare Sprache.
+      Harte SciFi: Wissenschaftlich plausibel. Space Opera: Charakterfokus.
+  romance:
+    name: Romance / Liebesroman
+    style_hint: |
+      Emotionale Tiefe und innere Monologe. Chemie zwischen Figuren zeigen.
+      "Will they/won't they"-Spannung. Sinnliche, aber nicht vulgäre Sprache.
+      Happy End oder Happy For Now.
+  thriller:
+    name: Thriller
+    style_hint: |
+      Hohes Tempo, kurze Sätze in Actionszenen. Cliffhanger an Kapitelenden.
+      Zeitdruck spürbar machen. Twists logisch vorbereiten.
+      Perspektivwechsel für Spannung nutzen.
+  mystery:
+    name: Mystery / Krimi
+    style_hint: |
+      Hinweise fair verteilen (Fair Play). Falsche Fährten einbauen.
+      Logische Deduktion zeigen. Atmosphärische Schauplätze.
+      Detektiv-Perspektive, Leser mitdenken lassen.
+  historical_fiction:
+    name: Historischer Roman
+    style_hint: |
+      Historische Genauigkeit in Details. Zeittypische Sprache, Dialoge.
+      Recherchierte Alltagsbeschreibungen. Gesellschaftliche Normen der Zeit.
+      Fakten und Fiktion klar trennbar halten.
+  adventure:
+    name: Abenteuer
+    style_hint: |
+      Rasantes Tempo, exotische Schauplätze. Gefahr und Entdeckung.
+      Charakterwachstum durch Herausforderungen. Lebendige Action-Szenen.
+      Optimistischer Grundton, Entdeckergeist.
+  dystopian:
+    name: Dystopie
+    style_hint: |
+      Unterdrückende Systeme durch Details zeigen. Graue, trostlose Atmosphäre.
+      Widerstand als zentrales Motiv. Moralische Grauzonen erkunden.
+      Hoffnung als Kontrapunkt zur Dunkelheit.
+  young_adult:
+    name: Young Adult
+    style_hint: |
+      Coming-of-Age-Themen. Authentische Jugendsprache ohne Klischees.
+      Identitätsfindung, erste Liebe, Freundschaft. Zugängliche Prosa.
+      Emotionale Intensität, hohe Identifikation mit Protagonist.
+  literary_fiction:
+    name: Literarische Fiktion
+    style_hint: |
+      Sprachliche Exzellenz und Stilbewusstsein. Tiefe Charakterstudien.
+      Subtext und Mehrdeutigkeit. Unkonventionelle Strukturen möglich.
+      Gesellschaftliche Relevanz, philosophische Tiefe.
+  paranormal:
+    name: Paranormal
+    style_hint: |
+      Übernatürliche Elemente mit Alltag verweben. Regeln der Übernatürlichkeit etablieren.
+      Romantik und Spannung kombinieren. Sinnliche Beschreibungen.
+      Geheimnisvolle Atmosphäre aufbauen.
+  erotica:
+    name: Erotica
+    style_hint: |
+      Sinnliche, geschmackvolle Beschreibungen. Emotionale Verbindung vor Körperlichkeit.
+      Einvernehmlichkeit und Respekt betonen. Spannung durch Verlangen aufbauen.
+      Charakterentwicklung parallel zur erotischen Handlung.
+  comedy:
+    name: Comedy / Humor
+    style_hint: |
+      Situationskomik und Wortwitz. Timing in Dialogen beachten.
+      Übertreibung gezielt einsetzen. Sympathische, fehlbare Charaktere.
+      Ernsthafte Momente als Kontrast für Humor.
+  drama:
+    name: Drama
+    style_hint: |
+      Intensive zwischenmenschliche Konflikte. Emotionale Wahrhaftigkeit.
+      Langsame Eskalation von Spannungen. Dialoge als Schlachtfelder.
+      Charaktere mit nachvollziehbaren Schwächen.
+  action:
+    name: Action
+    style_hint: |
+      Knappe, prägnante Sätze. Choreographierte Kampfszenen.
+      Physische Erschöpfung spürbar machen. Klare räumliche Orientierung.
+      Hohe Einsätze, unmittelbare Gefahr.
+  post_apocalyptic:
+    name: Post-Apokalypse
+    style_hint: |
+      Ressourcenknappheit in Details zeigen. Verfallene Zivilisation atmosphärisch.
+      Überlebensmoral und schwierige Entscheidungen. Neue Gesellschaftsordnungen.
+      Hoffnung in der Trostlosigkeit finden.
+  steampunk:
+    name: Steampunk
+    style_hint: |
+      Viktorianische Ästhetik mit Dampftechnologie. Messing, Zahnräder, Erfindungen.
+      Gesellschaftskritik der Industriellen Revolution. Abenteuerlicher Ton.
+      Technische Beschreibungen mit Fantasie verbinden.
+  cyberpunk:
+    name: Cyberpunk
+    style_hint: |
+      High Tech, Low Life. Neon-Atmosphäre, Regen, Megacities.
+      Technologiekritik und Transhumanismus. Hacker-Slang, schnelle Prosa.
+      Konzerne als Antagonisten, Individuum vs. System.
+  urban_fantasy:
+    name: Urban Fantasy
+    style_hint: |
+      Magie in moderner Stadt versteckt. Coole, schnoddrige Prosa.
+      Genre-Mix aus Fantasy und Krimi. Verborgene magische Gesellschaft.
+      Popkultur-Referenzen, zeitgenössischer Slang.
+  magical_realism:
+    name: Magischer Realismus
+    style_hint: |
+      Magie als selbstverständlicher Alltag. Ruhige, poetische Sprache.
+      Wunderbares ohne Erklärung akzeptieren. Lateinamerikanische Tradition.
+      Politische und soziale Subtexte einweben.
+  military:
+    name: Military / Kriegsroman
+    style_hint: |
+      Authentische militärische Terminologie. Kameradschaft und Verlust.
+      Strategische und taktische Details. Psychologische Kriegsfolgen.
+      Moralische Dilemmata im Gefecht.
+  western:
+    name: Western
+    style_hint: |
+      Weite, karge Landschaften atmosphärisch. Lakonische Dialoge.
+      Grenzer-Moral, Recht und Unrecht. Einsamkeit und Freiheit.
+      Klassische Tropes modern interpretiert.
+  gothic:
+    name: Gothic
+    style_hint: |
+      Düstere Schlösser und Herrenhäuser. Melancholische, opulente Sprache.
+      Verdrängte Geheimnisse und familiäre Flüche. Unheimliche Atmosphäre.
+      Romantik und Schauer kombinieren.
+  noir:
+    name: Noir / Hardboiled
+    style_hint: |
+      Zynische Innenperspektive. Kurze, harte Sätze. Düstere Stadtbilder.
+      Moralische Ambiguität, Femme Fatales. Erste-Person-Erzählung bevorzugt.
+      Regen, Rauch, Schatten – visuelle Dichte.
+  fairy_tale:
+    name: Märchen / Fairy Tale
+    style_hint: |
+      Archetypische Figuren und Motive. "Es war einmal..."-Atmosphäre modernisiert.
+      Magische Regeln etablieren. Dunkle Untertöne hinter heller Fassade.
+      Moralische Lektionen subtil statt belehrend.
+  slice_of_life:
+    name: Slice of Life
+    style_hint: |
+      Alltägliche Begebenheiten bedeutsam machen. Ruhiges Tempo, genaue Beobachtung.
+      Charaktertiefe durch kleine Momente. Warme, einladende Prosa.
+      Kein großer Plot – Fokus auf Entwicklung und Beziehungen.
+  superhero:
+    name: Superhelden
+    style_hint: |
+      Kräfte mit klaren Regeln und Grenzen. Geheime Identität, doppeltes Leben.
+      Moralische Verantwortung thematisieren. Epische Kämpfe, visuelle Action.
+      Menschlichkeit hinter der Maske zeigen.
+  survival:
+    name: Survival
+    style_hint: |
+      Ressourcenmanagement detailliert. Physische und psychische Erschöpfung.
+      Natur als Antagonist und Verbündeter. Erfindergeist und Improvisation.
+      Isolation und ihre psychologischen Folgen.
+  biography:
+    name: Biographie / Memoir
+    style_hint: |
+      Authentizität und historische Genauigkeit. Reflektierende, persönliche Stimme.
+      Schlüsselmomente eines Lebens herausarbeiten. Zeitgeist einfangen.
+      Emotionale Wahrheit über faktische Vollständigkeit.
+  children:
+    name: Kinderbuch
+    style_hint: |
+      Einfache, klare Sprache ohne Banalität. Kurze Sätze, lebendige Bilder.
+      Positive Botschaften ohne Zeigefinger. Humor und Abenteuerlust.
+      Identifikationsfiguren auf Augenhöhe.
+  satire:
+    name: Satire
+    style_hint: |
+      Übertreibung als Stilmittel. Gesellschaftskritik durch Humor.
+      Ironie und Sarkasmus gezielt. Intelligenter Witz, nicht Albernheit.
+      Spiegel der Gesellschaft – verzerrt, aber erkennbar.
+  experimental:
+    name: Experimentell
+    style_hint: |
+      Unkonventionelle Erzählstrukturen. Sprachspiel und Formbewusstsein.
+      Lesererwartungen bewusst brechen. Fragmentierung, Collage, Stream of Consciousness.
+      Mut zur Lücke, Vertrauen in den Leser.
