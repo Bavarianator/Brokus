@@ -1,1 +1,95 @@
+# ─────────────────────────────────────────────────────────────────
+# brokus .gitignore – verhindert dass Bücher, DB, Logs, Cache, Keys
+# jemals ins Repo (und damit auf GitHub) gelangen.
+# ─────────────────────────────────────────────────────────────────
+
+# ── User-generierte Inhalte (Bücher, Datenbank, Backups, Cache) ──
 data/books/
+data/projects.db
+data/projects.db-*
+data/backups/
+data/cache/
+data/logs/
+data/exports/
+data/drafts/
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ── Secrets / API-Keys (lokal in ~/.config/brokus/) ──
+*.enc
+*.key
+secrets.enc
+master.key
+.env
+.env.*
+!.env.example
+
+# ── Python-Build / Cache ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.pyright/
+
+# ── Virtual Environments ──
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ── IDE / Editor ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# ── OS / Temporär ──
+*.tmp
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.log
+nul
+
+# ── Node / Frontend (falls später) ──
+node_modules/
+.next/
+.nuxt/
+.parcel-cache/
+
+# ── Lokale Config mit sensitiven Daten ──
+config/local.yaml
+config/local.yml
+config/*.local.*
+
+# ── Brokus-spezifisch ──
+.brokus/
+.cache/
+*.brokus.bak

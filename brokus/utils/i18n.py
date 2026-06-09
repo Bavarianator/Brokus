@@ -29,7 +29,47 @@ from typing import Optional
 # Constants
 # ─────────────────────────────────────────────────────────────
 
-_I18N_DIR = Path("data/i18n")
+def _resolve_i18n_dir() -> Path:
+    """Locate the ``data/i18n`` directory robustly.
+
+    Works regardless of the current working directory: the CLI is often
+    invoked via ``bin/brokus`` (CWD = somewhere else) or as a module
+    (``python -m brokus``) from an unexpected location. We try a few
+    strategies and cache the first that exists.
+    """
+    candidates: list[Path] = []
+
+    # 1) BROKUS_I18N_DIR override (useful for tests / packaging)
+    override = os.environ.get("BROKUS_I18N_DIR")
+    if override:
+        candidates.append(Path(override))
+
+    # 2) Co-located with this module: brokus/utils/i18n.py → ../../data/i18n
+    here = Path(__file__).resolve().parent
+    candidates.append(here.parent.parent / "data" / "i18n")
+
+    # 3) CWD-relative (works when running `python -m brokus` from project root)
+    candidates.append(Path("data") / "i18n")
+
+    # 4) Walk upwards from CWD looking for a sibling ``data/i18n``
+    cwd = Path.cwd().resolve()
+    for ancestor in [cwd, *cwd.parents]:
+        candidate = ancestor / "data" / "i18n"
+        if candidate.is_dir():
+            candidates.append(candidate)
+            break
+
+    for c in candidates:
+        try:
+            if c.is_dir():
+                return c
+        except OSError:
+            continue
+    # Last resort: return the most likely candidate so error messages make sense
+    return candidates[1] if len(candidates) > 1 else candidates[0]
+
+
+_I18N_DIR = _resolve_i18n_dir()
 _DEFAULT_LANG = "de"
 _AVAILABLE = ("de", "en", "fr", "es", "it", "nl")
 
@@ -85,14 +125,19 @@ def reload_language(lang: Optional[str] = None) -> None:
 def set_language(lang: str) -> bool:
     """Switch the active language. Returns True on success.
 
-    Falls back to the default language if the requested one is unknown
-    or has no translation file.
+    Always reloads the target language file from disk to bust the cache –
+    this guarantees that any keys added to the JSON after the module was first
+    imported are picked up on the next call. Falls back to the default
+    language if the requested one is unknown or has no translation file.
     """
     global _CURRENT_LANG
     if lang not in _AVAILABLE:
         return False
-    # Pre-load to fail fast if the file is missing
-    _load(lang)
+    # BUST THE CACHE: always re-read from disk so any new keys are picked up
+    # (this is the fix for keys that were added after the module was first
+    # imported and where the cached _TRANSLATIONS dict was filled with
+    # the older, incomplete set).
+    reload_language(lang)
     _CURRENT_LANG = lang
     return True
 

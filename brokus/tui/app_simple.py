@@ -1208,6 +1208,7 @@ async def _settings_provider_menu():
             t("settings.provider.custom_url"),
             t("settings.provider.fallback"),
             t("settings.provider.refresh"),
+            "🔐  Master-Passphrase setzen / ändern" + ("" if not _has_master_passphrase() else "  ✓"),
             t("settings.back_to_settings"),
         ])
         if choice == 0: _pick_provider()
@@ -1216,7 +1217,8 @@ async def _settings_provider_menu():
         elif choice == 3: _set_custom_base_url()
         elif choice == 4: _configure_fallback_models()
         elif choice == 5: _force_refresh_models()
-        elif choice == 6: break
+        elif choice == 6: _set_master_passphrase(reencrypt_after=True)
+        elif choice == 7: break
 
 
 async def _settings_ai_menu():
@@ -1513,6 +1515,16 @@ def _enter_api_key():
         os.environ[env_var] = key
         console.print(f"  [yellow]Key wurde als Umgebungsvariable gesetzt (temporär).[/yellow]")
 
+    # ── Nach dem Speichern: Master-Passphrase anbieten (nur wenn noch keine aktiv) ──
+    if not _has_master_passphrase():
+        console.print()
+        console.print(Rule("🔐 Master-Passphrase", style="bright_blue"))
+        console.print("  [dim]Deine secrets.enc ist aktuell nur an deine Maschine gebunden.[/dim]")
+        console.print("  [dim]Mit einer Master-Passphrase ist sie ZUSÄTZLICH durch ein Passwort[/dim]")
+        console.print("  [dim]geschützt – selbst bei Festplattenklau oder Cloud-Backup bleibt sie unknackbar.[/dim]")
+        if confirm("🔐 Jetzt Master-Passphrase setzen?"):
+            _set_master_passphrase(reencrypt_after=True)
+
     pause()
 
 
@@ -1610,6 +1622,99 @@ def _toggle_auto_export():
     else:
         console.print("  [dim]Nach der Generierung wird manuell nach dem Export-Format gefragt.[/dim]")
     pause()
+
+
+def _set_master_passphrase(reencrypt_after: bool = True):
+    """Interactive flow to set / rotate the master passphrase.
+
+    - Prompts for a new passphrase (with confirmation + minimum-length check)
+    - Saves to ``~/.config/brokus/master.key`` with ``0o600``
+    - Sets ``BROKUS_MASTER_PASSWORD`` for the current session
+    - Optionally re-encrypts the existing ``secrets.enc`` with the new key
+      (so existing API keys remain readable)
+    """
+    section("🔐 Master-Passphrase setzen")
+
+    from brokus.utils.crypto import set_passphrase, _get_passphrase, SecretStore
+
+    if _get_passphrase() is not None:
+        console.print("  [yellow]⚠ Es ist bereits eine Master-Passphrase aktiv (per env oder master.key).[/yellow]")
+        console.print("  [dim]Wenn du hier fortfährst, wird sie ROTIERT (alte Werte gehen verloren, falls du sie nicht merkst).[/dim]\n")
+        if not confirm("Wirklich die Master-Passphrase ändern (rotieren)?"):
+            return
+    else:
+        console.print("  [dim]Wähle ein starkes Passwort (min. 12 Zeichen, ideal 20+).[/dim]")
+        console.print("  [dim]Es schützt zusätzlich zu deiner Maschine die secrets.enc-Datei.[/dim]")
+        console.print("  [dim]Wenn du es vergisst, sind alle gespeicherten API-Keys verloren![/dim]\n")
+
+    # ── Read current key count BEFORE we change anything ──
+    existing = SecretStore.instance()
+    if not existing.is_loaded:
+        existing.load()
+    n_existing = len(existing._secrets)
+
+    # ── Prompt + confirm ──
+    while True:
+        pw1 = ask_password("Neue Master-Passphrase (min. 12 Zeichen):")
+        if not pw1:
+            console.print("  [yellow]Abgebrochen – keine Änderung.[/yellow]")
+            pause()
+            return
+        if len(pw1) < 12:
+            console.print(f"  [red]✗ Zu kurz ({len(pw1)} Zeichen). Bitte min. 12 Zeichen wählen.[/red]")
+            if not confirm("Trotzdem fortfahren?"):
+                continue
+        if len(pw1) < 8:
+            console.print("  [red]✗ Mindestens 8 Zeichen erforderlich – Abbruch.[/red]")
+            pause()
+            return
+        pw2 = ask_password("Passphrase wiederholen (Bestätigung):")
+        if pw1 != pw2:
+            console.print("  [red]✗ Passphrasen stimmen nicht überein.[/red]")
+            continue
+        break
+
+    # ── Persist to master.key (0o600) + set env var for current session ──
+    try:
+        path = set_passphrase(pw1)
+        os.environ["BROKUS_MASTER_PASSWORD"] = pw1
+        mode = s_mode = "rotiert" if _get_passphrase() is not None else "gesetzt"
+        # After set_passphrase, _get_passphrase will return the new one, so re-derive mode
+        if n_existing > 0:
+            mode = "rotiert"  # we already had a passphrase before
+        console.print(f"\n  [green]✓ Master-Passphrase {mode}:[/green] [dim]{path}[/dim]")
+    except Exception as e:
+        console.print(f"\n  [red]Fehler beim Speichern der Passphrase: {e}[/red]")
+        pause()
+        return
+
+    # ── Re-encrypt existing secrets with the new key ──
+    if reencrypt_after and n_existing > 0:
+        try:
+            if existing.save():
+                console.print(f"  [green]✓ {n_existing} gespeicherte API-Keys mit neuer Passphrase re-verschlüsselt.[/green]")
+            else:
+                console.print("  [yellow]⚠ Re-Verschlüsselung fehlgeschlagen – secrets.enc ist evtl. mit alter Passphrase.[/yellow]")
+        except Exception as e:
+            console.print(f"  [yellow]⚠ Re-Verschlüsselung fehlgeschlagen: {e}[/yellow]")
+    elif n_existing == 0:
+        console.print("  [dim](noch keine API-Keys gespeichert – secrets.enc wird beim ersten save() automatisch mit Passphrase verschlüsselt)[/dim]")
+
+    console.print()
+    console.print("  [bold green]🔐 Master-Passphrase aktiv.[/bold green]")
+    console.print("  [dim]Nächste Schritte:[/dim]")
+    console.print("  [dim]• Setze in deiner Shell: export BROKUS_MASTER_PASSWORD='...' (für andere Sessions)[/dim]")
+    console.print("  [dim]• Oder verwende master.key direkt (nur lokales single-session Setup)[/dim]")
+    pause()
+
+
+def _has_master_passphrase() -> bool:
+    """Return True if a master passphrase is currently active."""
+    try:
+        from brokus.utils.crypto import _get_passphrase
+        return _get_passphrase() is not None
+    except Exception:
+        return False
 
 
 def _set_custom_base_url():

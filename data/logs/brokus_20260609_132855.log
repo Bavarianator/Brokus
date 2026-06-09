@@ -1,2 +1,0 @@
-2026-06-09 13:28:56,666 [DEBUG] Saved 2 encrypted secrets (v2, AES-256-GCM)
-2026-06-09 13:28:57,459 [WARNING] v2 secrets decryption failed – wrong machine, missing/wrong passphrase, or file tampered
