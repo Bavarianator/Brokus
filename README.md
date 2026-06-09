@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/version-1.2.-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.2.2-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/python-3.10+-green?style=flat-square" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-purple?style=flat-square" alt="License">
   <br>
