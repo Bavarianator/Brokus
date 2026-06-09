@@ -1,349 +1,408 @@
-# ─────────────────────────────────────────────────────────────
-# brokus – Settings (Erweitert: 30+ Provider, AI-Params, Custom-Endpoint)
-# ─────────────────────────────────────────────────────────────
-
-ai:
-  provider: anthropic             # Provider-Key (siehe providers)
-  model: claude-sonnet-4-5       # Modell-Name
-  temperature: 0.7               # 0.0 = deterministisch, 1.0 = kreativ
-  max_tokens: 4000
-  top_p: null                    # Nucleus Sampling (0.0-1.0, null = aus)
-  frequency_penalty: null        # Wiederholungs-Strafe (-2.0 bis 2.0, null = aus)
-  presence_penalty: null         # Anwesenheits-Strafe (-2.0 bis 2.0, null = aus)
-  max_retries: 3
-  retry_delay: 1.0               # Basis-Verzögerung (exponentieller Backoff)
-  custom_base_url: null          # Override base_url (für openai_compat / Proxies)
-
-# ── Provider Registry ──
-# Jeder Provider hat: key, name, base_url, api_key_env, library, models
-providers:
-  # ── Lokal / Offline ──
-  ollama_local:
-    name: "Ollama (Lokal)"
-    base_url: "http://localhost:11434/v1"
-    api_key_env: "ollama"
-    library: openai
-    models: ["llama3.3:70b", "mistral:7b", "gemma3:27b", "phi4:14b", "qwen3:32b", "deepseek-r1:32b"]
-    cost: "Kostenlos"
-    note: "GPU erforderlich, komplett offline"
-
-  ollama_cloud:
-    name: "Ollama Cloud"
-    base_url: "https://ollama.com"
-    api_key_env: "OLLAMA_API_KEY"
-    library: ollama_cloud
-    models: ["gpt-oss:120b-cloud", "kimi-k2.6", "minimax-m2", "glm-4.5", "qwen3-next", "deepseek-v4-flash"]
-    cost: "Pay-per-use"
-    note: "Keine GPU nötig"
-
-  lmstudio:
-    name: "LM Studio (Lokal)"
-    base_url: "http://localhost:1234/v1"
-    api_key_env: "lm-studio"
-    library: openai
-    models: ["local-model"]
-    cost: "Kostenlos"
-    note: "GUI, OpenAI-kompatibel, offline"
-
-  localai:
-    name: "LocalAI"
-    base_url: "http://localhost:8080/v1"
-    api_key_env: ""
-    library: openai
-    models: ["local-model"]
-    cost: "Kostenlos"
-    note: "Docker, OpenAI-kompatibel"
-
-  # ── Premium Cloud ──
-  openai:
-    name: "OpenAI"
-    base_url: "https://api.openai.com/v1"
-    api_key_env: "OPENAI_API_KEY"
-    library: openai
-    models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o3", "o4-mini", "o1-preview", "o1-mini"]
-    cost: "0.15–60$ / 1M Tokens"
-
-  anthropic:
-    name: "Anthropic (Claude)"
-    base_url: null
-    api_key_env: "ANTHROPIC_API_KEY"
-    library: anthropic
-    models: ["claude-opus-4-1", "claude-opus-4-5", "claude-sonnet-4-5", "claude-haiku-3-5"]
-    cost: "0.25–75$ / 1M Tokens"
-    note: "200k Kontext-Fenster"
-
-  google:
-    name: "Google Gemini"
-    base_url: null
-    api_key_env: "GOOGLE_API_KEY"
-    library: google
-    models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash-lite"]
-    cost: "0.075–3.50$ / 1M Tokens"
-    note: "1M Token Kontext-Fenster"
-
-  xai:
-    name: "xAI (Grok)"
-    base_url: "https://api.x.ai/v1"
-    api_key_env: "XAI_API_KEY"
-    library: openai
-    models: ["grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-3", "grok-3-mini", "grok-2-vision"]
-    cost: "0.20–15$ / 1M Tokens"
-    note: "Witzig, kreativ, 2M Kontext"
-
-  # ── Aggregatoren ──
-  openrouter:
-    name: "OpenRouter"
-    base_url: "https://openrouter.ai/api/v1"
-    api_key_env: "OPENROUTER_API_KEY"
-    library: openai
-    models: ["openai/gpt-4o", "anthropic/claude-sonnet-4-5", "google/gemini-2.5-pro", "meta-llama/llama-3.3-70b", "deepseek/deepseek-chat", "minimax/minimax-m2"]
-    cost: "Provider-Preis + Aufschlag"
-    note: "Ein Key für 200+ Modelle"
-
-  github_models:
-    name: "GitHub Models"
-    base_url: "https://models.inference.ai.azure.com"
-    api_key_env: "GITHUB_TOKEN"
-    library: openai
-    models: ["gpt-4o", "gpt-4o-mini", "o1-preview", "o1-mini", "Phi-3.5-MoE-instruct", "Mistral-large"]
-    cost: "Kostenlos (Rate-Limits)"
-    note: "GitHub-Personal-Access-Token genügt"
-
-  # ── Schnell & Günstig ──
-  groq:
-    name: "Groq"
-    base_url: "https://api.groq.com/openai/v1"
-    api_key_env: "GROQ_API_KEY"
-    library: openai
-    models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"]
-    cost: "0.05–0.79$ / 1M Tokens"
-    note: "⚡ 500+ Tokens/Sekunde"
-
-  cerebras:
-    name: "Cerebras"
-    base_url: "https://api.cerebras.ai/v1"
-    api_key_env: "CEREBRAS_API_KEY"
-    library: openai
-    models: ["llama-3.3-70b", "llama-3.1-8b", "qwen-2.5-32b"]
-    cost: "0.10–0.60$ / 1M Tokens"
-    note: "Weltweit schnellste Inferenz"
-
-  sambanova:
-    name: "SambaNova"
-    base_url: "https://api.sambanova.ai/v1"
-    api_key_env: "SAMBANOVA_API_KEY"
-    library: openai
-    models: ["Meta-Llama-3.3-70B-Instruct", "Meta-Llama-3.1-8B-Instruct", "DeepSeek-R1"]
-    cost: "0.30–0.60$ / 1M Tokens"
-
-  fireworks:
-    name: "Fireworks AI"
-    base_url: "https://api.fireworks.ai/inference/v1"
-    api_key_env: "FIREWORKS_API_KEY"
-    library: openai
-    models: ["accounts/fireworks/models/llama-v3p3-70b-instruct", "accounts/fireworks/models/mixtral-8x22b-instruct", "accounts/fireworks/models/deepseek-v3"]
-    cost: "0.20–0.90$ / 1M Tokens"
-
-  deepseek:
-    name: "DeepSeek"
-    base_url: "https://api.deepseek.com"
-    api_key_env: "DEEPSEEK_API_KEY"
-    library: openai
-    models: ["deepseek-chat", "deepseek-reasoner"]
-    cost: "0.07–2.19$ / 1M Tokens"
-
-  mistral:
-    name: "Mistral AI"
-    base_url: "https://api.mistral.ai/v1"
-    api_key_env: "MISTRAL_API_KEY"
-    library: openai
-    models: ["mistral-large-latest", "mistral-small-latest", "codestral-latest", "open-mixtral-8x22b"]
-    cost: "0.1–4$ / 1M Tokens"
-
-  novita:
-    name: "Novita AI"
-    base_url: "https://api.novita.ai/v3/openai"
-    api_key_env: "NOVITA_API_KEY"
-    library: openai
-    models: ["meta-llama/llama-3.3-70b-instruct", "qwen/qwen-2.5-72b-instruct", "deepseek/deepseek-v3"]
-    cost: "0.10–0.50$ / 1M Tokens"
-
-  deepinfra:
-    name: "DeepInfra"
-    base_url: "https://api.deepinfra.com/v1/openai"
-    api_key_env: "DEEPINFRA_API_KEY"
-    library: openai
-    models: ["meta-llama/Llama-3.3-70B-Instruct", "Qwen/Qwen2.5-72B-Instruct", "microsoft/Phi-4"]
-    cost: "0.05–0.90$ / 1M Tokens"
-
-  together:
-    name: "Together AI"
-    base_url: "https://api.together.xyz/v1"
-    api_key_env: "TOGETHER_API_KEY"
-    library: openai
-    models: ["meta-llama/Llama-3.3-70B-Instruct-Turbo", "Qwen/Qwen2.5-72B-Instruct-Turbo", "deepseek-ai/DeepSeek-V3"]
-    cost: "0.06–0.9$ / 1M Tokens"
-
-  huggingface:
-    name: "Hugging Face"
-    base_url: "https://api-inference.huggingface.co/v1"
-    api_key_env: "HF_TOKEN"
-    library: openai
-    models: ["meta-llama/Llama-3.3-70B-Instruct", "mistralai/Mixtral-8x7B-Instruct-v0.1", "microsoft/Phi-4", "Qwen/Qwen2.5-72B-Instruct"]
-    cost: "Kostenlos (begrenzt) / Pro ab 9$/Monat"
-
-  # ── Enterprise / Spezialisiert ──
-  azure_openai:
-    name: "Azure OpenAI"
-    base_url: null
-    api_key_env: "AZURE_OPENAI_API_KEY"
-    library: openai
-    models: ["gpt-4o", "gpt-4-turbo", "gpt-35-turbo"]
-    cost: "OpenAI + Azure-Marge"
-    note: "DSGVO-konform, EU-Hosting"
-
-  nvidia:
-    name: "NVIDIA NIM"
-    base_url: "https://integrate.api.nvidia.com/v1"
-    api_key_env: "NVIDIA_API_KEY"
-    library: openai
-    models: ["meta/llama-3.3-70b-instruct", "nvidia/llama-3.1-nemotron-70b-instruct", "google/gemma-2-27b-it"]
-    cost: "Kostenlose Tier / Enterprise verfügbar"
-    note: "1000+ Modelle, NVIDIA-Hardware"
-
-  replicate:
-    name: "Replicate"
-    base_url: "https://openai-proxy.replicate.com/v1"
-    api_key_env: "REPLICATE_API_TOKEN"
-    library: openai
-    models: ["meta/meta-llama-3-70b-instruct", "meta/meta-llama-3.1-405b-instruct"]
-    cost: "0.05–2.50$ / 1M Tokens"
-
-  anyscale:
-    name: "Anyscale"
-    base_url: "https://api.endpoints.anyscale.com/v1"
-    api_key_env: "ANYSCALE_API_KEY"
-    library: openai
-    models: ["meta-llama/Llama-3-70b-chat-hf", "mistralai/Mixtral-8x7B-Instruct-v0.1"]
-    cost: "0.50–1.00$ / 1M Tokens"
-
-  perplexity:
-    name: "Perplexity AI"
-    base_url: "https://api.perplexity.ai"
-    api_key_env: "PERPLEXITY_API_KEY"
-    library: openai
-    models: ["llama-3.1-sonar-huge-128k-online", "llama-3.1-sonar-large-128k-online"]
-    cost: "5–20$ / 1M Tokens"
-    note: "Mit Websuche"
-
-  cohere:
-    name: "Cohere"
-    base_url: null
-    api_key_env: "COHERE_API_KEY"
-    library: cohere
-    models: ["command-r-plus-08-2024", "command-r-08-2024", "command-light"]
-    cost: "0.075–2.50$ / 1M Tokens"
-
-  ai21:
-    name: "AI21 (Jamba)"
-    base_url: "https://api.ai21.com/studio/v1"
-    api_key_env: "AI21_API_KEY"
-    library: openai
-    models: ["jamba-1.5-large", "jamba-1.5-mini"]
-    cost: "0.20–2.00$ / 1M Tokens"
-    note: "256k Kontext, Mamba+Transformer"
-
-  writer:
-    name: "Writer (Palmyra)"
-    base_url: "https://api.writer.com/v1"
-    api_key_env: "WRITER_API_KEY"
-    library: openai
-    models: ["palmyra-x5", "palmyra-x4", "palmyra-creative"]
-    cost: "0.40–1.40$ / 1M Tokens"
-    note: "Enterprise-Writing & Marketing"
-
-  reka:
-    name: "Reka"
-    base_url: "https://api.reka.ai/v1"
-    api_key_env: "REKA_API_KEY"
-    library: openai
-    models: ["reka-core", "reka-flash", "reka-edge"]
-    cost: "0.40–1.50$ / 1M Tokens"
-    note: "Multimodal (Text/Bild/Audio/Video)"
-
-  # ── Asiatische Modelle ──
-  moonshot:
-    name: "Moonshot (Kimi)"
-    base_url: "https://api.moonshot.ai/v1"
-    api_key_env: "MOONSHOT_API_KEY"
-    library: openai
-    models: ["moonshot-v1-128k", "moonshot-v1-32k", "moonshot-v1-8k", "kimi-k2.6"]
-    cost: "0.20–2.00$ / 1M Tokens"
-    note: "128k Kontext, Chinesisch + Englisch"
-
-  zhipu:
-    name: "Zhipu (GLM / z.ai)"
-    base_url: "https://api.z.ai/api/paas/v4"
-    api_key_env: "ZHIPU_API_KEY"
-    library: openai
-    models: ["glm-4.6", "glm-4.5", "glm-4-plus", "glm-4-flash"]
-    cost: "0.10–3.00$ / 1M Tokens"
-    note: "Top chinesisches Modell, mehrsprachig"
-
-  # ── Custom / Sonstige ──
-  openai_compat:
-    name: "🔧 Eigener OpenAI-Endpunkt"
-    base_url: null
-    api_key_env: "OPENAI_COMPAT_KEY"
-    library: openai
-    models: ["custom-model"]
-    cost: "Variabel"
-    note: "Beliebiger OpenAI-kompatibler Endpunkt (vLLM, TabbyAPI, LiteLLM-Proxy, ...)"
-
-# ─────────────────────────────────────────────────────────────
-
-generation:
-  min_chapter_words: 1500
-  max_chapter_words: 3000
-  compliance_threshold: 80
-  auto_retry: true
-  max_retries: 3
-  default_chapters: 20
-  max_chapters: 50
-  min_chapters: 5
-  chapter_delay: 2.0            # Sekunden Pause zwischen Kapiteln
-  default_language: "Deutsch"   # Standardsprache für neue Bücher
-  default_genre: "drama"        # Standard-Genre
-  story_pace: "balanced"        # "slow" | "balanced" | "fast"
-  detail_level: "standard"      # "loose" | "standard" | "detailed" | "strict"
-  auto_export: false            # Nach Generation automatisch exportieren
-  auto_open_after_export: true  # Datei nach Export öffnen
-  export_formats: ["md", "epub"] # Standard-Export-Formate
-  backup_enabled: true          # Vor jeder Generation ein Backup machen
-  backup_count: 5               # Wie viele Backups behalten
-  save_drafts: true             # Zwischendrafts speichern
-
-ui:
-  theme: dark
-  animations: true
-  log_level: "INFO"             # "DEBUG" | "INFO" | "WARNING" | "ERROR"
-  language: "de"                # UI-Sprache: "de" | "en" | "fr" | "es" | "it"
-  show_token_count: true        # Token-Verbrauch anzeigen
-  show_cost_estimate: true      # Geschätzte Kosten anzeigen
-  progress_style: "bar"         # "bar" | "spinner" | "dots"
-  confirm_quit: true            # Vor Beenden nachfragen
-
-storage:
-  database_path: data/projects.db
-  books_path: data/books
-  backups_path: data/backups
-  max_projects: 0               # 0 = unbegrenzt
-
 advanced:
-  # Erweiterte AI-Parameter (überschreiben ai.* wenn gesetzt)
-  use_extended_thinking: false  # Reasoning-Modelle mit Gedankenkette
-  parallel_chapters: 1          # Kapitel parallel generieren (1 = seriell)
-  request_timeout: 300          # Sekunden pro API-Request
-  streaming: false              # Token-Stream an UI (Experimentell)
-  cache_responses: true         # AI-Antworten cachen
+  cache_responses: true
   max_cache_size_mb: 500
+  parallel_chapters: 1
+  request_timeout: 300
+  streaming: false
+  use_extended_thinking: false
+ai:
+  custom_base_url: null
+  frequency_penalty: null
+  max_retries: 3
+  max_tokens: 4000
+  model: claude-sonnet-4-5
+  presence_penalty: null
+  provider: anthropic
+  retry_delay: 1.0
+  temperature: 0.7
+  top_p: null
+generation:
+  auto_export: false
+  auto_open_after_export: true
+  auto_retry: true
+  backup_count: 5
+  backup_enabled: true
+  chapter_delay: 2.0
+  compliance_threshold: 80
+  default_chapters: 20
+  default_genre: drama
+  default_language: Deutsch
+  detail_level: standard
+  export_formats:
+  - md
+  - epub
+  max_chapter_words: 3000
+  max_chapters: 50
+  max_retries: 3
+  min_chapter_words: 1500
+  min_chapters: 5
+  save_drafts: true
+  story_pace: balanced
+providers:
+  ai21:
+    api_key_env: AI21_API_KEY
+    base_url: https://api.ai21.com/studio/v1
+    cost: 0.20–2.00$ / 1M Tokens
+    library: openai
+    models:
+    - jamba-1.5-large
+    - jamba-1.5-mini
+    name: AI21 (Jamba)
+    note: 256k Kontext, Mamba+Transformer
+  anthropic:
+    api_key_env: ANTHROPIC_API_KEY
+    base_url: null
+    cost: 0.25–75$ / 1M Tokens
+    library: anthropic
+    models:
+    - claude-opus-4-1
+    - claude-opus-4-5
+    - claude-sonnet-4-5
+    - claude-haiku-3-5
+    name: Anthropic (Claude)
+    note: 200k Kontext-Fenster
+  anyscale:
+    api_key_env: ANYSCALE_API_KEY
+    base_url: https://api.endpoints.anyscale.com/v1
+    cost: 0.50–1.00$ / 1M Tokens
+    library: openai
+    models:
+    - meta-llama/Llama-3-70b-chat-hf
+    - mistralai/Mixtral-8x7B-Instruct-v0.1
+    name: Anyscale
+  azure_openai:
+    api_key_env: AZURE_OPENAI_API_KEY
+    base_url: null
+    cost: OpenAI + Azure-Marge
+    library: openai
+    models:
+    - gpt-4o
+    - gpt-4-turbo
+    - gpt-35-turbo
+    name: Azure OpenAI
+    note: DSGVO-konform, EU-Hosting
+  cerebras:
+    api_key_env: CEREBRAS_API_KEY
+    base_url: https://api.cerebras.ai/v1
+    cost: 0.10–0.60$ / 1M Tokens
+    library: openai
+    models:
+    - llama-3.3-70b
+    - llama-3.1-8b
+    - qwen-2.5-32b
+    name: Cerebras
+    note: Weltweit schnellste Inferenz
+  cohere:
+    api_key_env: COHERE_API_KEY
+    base_url: null
+    cost: 0.075–2.50$ / 1M Tokens
+    library: cohere
+    models:
+    - command-r-plus-08-2024
+    - command-r-08-2024
+    - command-light
+    name: Cohere
+  deepinfra:
+    api_key_env: DEEPINFRA_API_KEY
+    base_url: https://api.deepinfra.com/v1/openai
+    cost: 0.05–0.90$ / 1M Tokens
+    library: openai
+    models:
+    - meta-llama/Llama-3.3-70B-Instruct
+    - Qwen/Qwen2.5-72B-Instruct
+    - microsoft/Phi-4
+    name: DeepInfra
+  deepseek:
+    api_key_env: DEEPSEEK_API_KEY
+    base_url: https://api.deepseek.com
+    cost: 0.07–2.19$ / 1M Tokens
+    library: openai
+    models:
+    - deepseek-chat
+    - deepseek-reasoner
+    name: DeepSeek
+  fireworks:
+    api_key_env: FIREWORKS_API_KEY
+    base_url: https://api.fireworks.ai/inference/v1
+    cost: 0.20–0.90$ / 1M Tokens
+    library: openai
+    models:
+    - accounts/fireworks/models/llama-v3p3-70b-instruct
+    - accounts/fireworks/models/mixtral-8x22b-instruct
+    - accounts/fireworks/models/deepseek-v3
+    name: Fireworks AI
+  github_models:
+    api_key_env: GITHUB_TOKEN
+    base_url: https://models.inference.ai.azure.com
+    cost: Kostenlos (Rate-Limits)
+    library: openai
+    models:
+    - gpt-4o
+    - gpt-4o-mini
+    - o1-preview
+    - o1-mini
+    - Phi-3.5-MoE-instruct
+    - Mistral-large
+    name: GitHub Models
+    note: GitHub-Personal-Access-Token genügt
+  google:
+    api_key_env: GOOGLE_API_KEY
+    base_url: null
+    cost: 0.075–3.50$ / 1M Tokens
+    library: google
+    models:
+    - gemini-2.5-pro
+    - gemini-2.5-flash
+    - gemini-2.0-flash-lite
+    name: Google Gemini
+    note: 1M Token Kontext-Fenster
+  groq:
+    api_key_env: GROQ_API_KEY
+    base_url: https://api.groq.com/openai/v1
+    cost: 0.05–0.79$ / 1M Tokens
+    library: openai
+    models:
+    - llama-3.3-70b-versatile
+    - llama-3.1-8b-instant
+    - mixtral-8x7b-32768
+    - gemma2-9b-it
+    name: Groq
+    note: ⚡ 500+ Tokens/Sekunde
+  huggingface:
+    api_key_env: HF_TOKEN
+    base_url: https://api-inference.huggingface.co/v1
+    cost: Kostenlos (begrenzt) / Pro ab 9$/Monat
+    library: openai
+    models:
+    - meta-llama/Llama-3.3-70B-Instruct
+    - mistralai/Mixtral-8x7B-Instruct-v0.1
+    - microsoft/Phi-4
+    - Qwen/Qwen2.5-72B-Instruct
+    name: Hugging Face
+  lmstudio:
+    api_key_env: lm-studio
+    base_url: http://localhost:1234/v1
+    cost: Kostenlos
+    library: openai
+    models:
+    - local-model
+    name: LM Studio (Lokal)
+    note: GUI, OpenAI-kompatibel, offline
+  localai:
+    api_key_env: ''
+    base_url: http://localhost:8080/v1
+    cost: Kostenlos
+    library: openai
+    models:
+    - local-model
+    name: LocalAI
+    note: Docker, OpenAI-kompatibel
+  mistral:
+    api_key_env: MISTRAL_API_KEY
+    base_url: https://api.mistral.ai/v1
+    cost: 0.1–4$ / 1M Tokens
+    library: openai
+    models:
+    - mistral-large-latest
+    - mistral-small-latest
+    - codestral-latest
+    - open-mixtral-8x22b
+    name: Mistral AI
+  moonshot:
+    api_key_env: MOONSHOT_API_KEY
+    base_url: https://api.moonshot.ai/v1
+    cost: 0.20–2.00$ / 1M Tokens
+    library: openai
+    models:
+    - moonshot-v1-128k
+    - moonshot-v1-32k
+    - moonshot-v1-8k
+    - kimi-k2.6
+    name: Moonshot (Kimi)
+    note: 128k Kontext, Chinesisch + Englisch
+  novita:
+    api_key_env: NOVITA_API_KEY
+    base_url: https://api.novita.ai/v3/openai
+    cost: 0.10–0.50$ / 1M Tokens
+    library: openai
+    models:
+    - meta-llama/llama-3.3-70b-instruct
+    - qwen/qwen-2.5-72b-instruct
+    - deepseek/deepseek-v3
+    name: Novita AI
+  nvidia:
+    api_key_env: NVIDIA_API_KEY
+    base_url: https://integrate.api.nvidia.com/v1
+    cost: Kostenlose Tier / Enterprise verfügbar
+    library: openai
+    models:
+    - meta/llama-3.3-70b-instruct
+    - nvidia/llama-3.1-nemotron-70b-instruct
+    - google/gemma-2-27b-it
+    name: NVIDIA NIM
+    note: 1000+ Modelle, NVIDIA-Hardware
+  ollama_cloud:
+    api_key_env: OLLAMA_API_KEY
+    base_url: https://ollama.com
+    cost: Pay-per-use
+    library: ollama_cloud
+    models:
+    - gpt-oss:120b-cloud
+    - kimi-k2.6
+    - minimax-m2
+    - glm-4.5
+    - qwen3-next
+    - deepseek-v4-flash
+    name: Ollama Cloud
+    note: Keine GPU nötig
+  ollama_local:
+    api_key_env: ollama
+    base_url: http://localhost:11434/v1
+    cost: Kostenlos
+    library: openai
+    models:
+    - llama3.3:70b
+    - mistral:7b
+    - gemma3:27b
+    - phi4:14b
+    - qwen3:32b
+    - deepseek-r1:32b
+    name: Ollama (Lokal)
+    note: GPU erforderlich, komplett offline
+  openai:
+    api_key_env: OPENAI_API_KEY
+    base_url: https://api.openai.com/v1
+    cost: 0.15–60$ / 1M Tokens
+    library: openai
+    models:
+    - gpt-4o
+    - gpt-4o-mini
+    - gpt-4-turbo
+    - o3
+    - o4-mini
+    - o1-preview
+    - o1-mini
+    name: OpenAI
+  openai_compat:
+    api_key_env: OPENAI_COMPAT_KEY
+    base_url: null
+    cost: Variabel
+    library: openai
+    models:
+    - custom-model
+    name: 🔧 Eigener OpenAI-Endpunkt
+    note: Beliebiger OpenAI-kompatibler Endpunkt (vLLM, TabbyAPI, LiteLLM-Proxy, ...)
+  openrouter:
+    api_key_env: OPENROUTER_API_KEY
+    base_url: https://openrouter.ai/api/v1
+    cost: Provider-Preis + Aufschlag
+    library: openai
+    models:
+    - openai/gpt-4o
+    - anthropic/claude-sonnet-4-5
+    - google/gemini-2.5-pro
+    - meta-llama/llama-3.3-70b
+    - deepseek/deepseek-chat
+    - minimax/minimax-m2
+    name: OpenRouter
+    note: Ein Key für 200+ Modelle
+  perplexity:
+    api_key_env: PERPLEXITY_API_KEY
+    base_url: https://api.perplexity.ai
+    cost: 5–20$ / 1M Tokens
+    library: openai
+    models:
+    - llama-3.1-sonar-huge-128k-online
+    - llama-3.1-sonar-large-128k-online
+    name: Perplexity AI
+    note: Mit Websuche
+  reka:
+    api_key_env: REKA_API_KEY
+    base_url: https://api.reka.ai/v1
+    cost: 0.40–1.50$ / 1M Tokens
+    library: openai
+    models:
+    - reka-core
+    - reka-flash
+    - reka-edge
+    name: Reka
+    note: Multimodal (Text/Bild/Audio/Video)
+  replicate:
+    api_key_env: REPLICATE_API_TOKEN
+    base_url: https://openai-proxy.replicate.com/v1
+    cost: 0.05–2.50$ / 1M Tokens
+    library: openai
+    models:
+    - meta/meta-llama-3-70b-instruct
+    - meta/meta-llama-3.1-405b-instruct
+    name: Replicate
+  sambanova:
+    api_key_env: SAMBANOVA_API_KEY
+    base_url: https://api.sambanova.ai/v1
+    cost: 0.30–0.60$ / 1M Tokens
+    library: openai
+    models:
+    - Meta-Llama-3.3-70B-Instruct
+    - Meta-Llama-3.1-8B-Instruct
+    - DeepSeek-R1
+    name: SambaNova
+  together:
+    api_key_env: TOGETHER_API_KEY
+    base_url: https://api.together.xyz/v1
+    cost: 0.06–0.9$ / 1M Tokens
+    library: openai
+    models:
+    - meta-llama/Llama-3.3-70B-Instruct-Turbo
+    - Qwen/Qwen2.5-72B-Instruct-Turbo
+    - deepseek-ai/DeepSeek-V3
+    name: Together AI
+  writer:
+    api_key_env: WRITER_API_KEY
+    base_url: https://api.writer.com/v1
+    cost: 0.40–1.40$ / 1M Tokens
+    library: openai
+    models:
+    - palmyra-x5
+    - palmyra-x4
+    - palmyra-creative
+    name: Writer (Palmyra)
+    note: Enterprise-Writing & Marketing
+  xai:
+    api_key_env: XAI_API_KEY
+    base_url: https://api.x.ai/v1
+    cost: 0.20–15$ / 1M Tokens
+    library: openai
+    models:
+    - grok-4-fast-reasoning
+    - grok-4-fast-non-reasoning
+    - grok-3
+    - grok-3-mini
+    - grok-2-vision
+    name: xAI (Grok)
+    note: Witzig, kreativ, 2M Kontext
+  zhipu:
+    api_key_env: ZHIPU_API_KEY
+    base_url: https://api.z.ai/api/paas/v4
+    cost: 0.10–3.00$ / 1M Tokens
+    library: openai
+    models:
+    - glm-4.6
+    - glm-4.5
+    - glm-4-plus
+    - glm-4-flash
+    name: Zhipu (GLM / z.ai)
+    note: Top chinesisches Modell, mehrsprachig
+storage:
+  backups_path: data/backups
+  books_path: data/books
+  database_path: data/projects.db
+  max_projects: 0
+ui:
+  animations: true
+  confirm_quit: true
+  language: nl
+  log_level: INFO
+  progress_style: bar
+  show_cost_estimate: true
+  show_token_count: true
+  theme: dark
