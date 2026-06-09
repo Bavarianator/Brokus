@@ -9,6 +9,8 @@ All providers are accessed through a single unified interface.
 
 import os
 import json
+import re
+import unicodedata
 import asyncio
 import time
 from typing import Optional, Any, TypeVar, Type
@@ -656,6 +658,7 @@ class BrokusAIClient:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         retry: bool = True,
+        model: Optional[str] = None,
     ) -> AIResponse:
         """Generate text from the configured AI provider.
 
@@ -665,6 +668,7 @@ class BrokusAIClient:
             temperature: Override default temperature.
             max_tokens: Override default max tokens.
             retry: Enable automatic retry on failure.
+            model: Override model for this call only (for multi-model setups).
 
         Returns:
             AIResponse with generated text and metadata.
@@ -680,57 +684,128 @@ class BrokusAIClient:
             {"role": "user", "content": user_prompt},
         ]
 
-        fallback_pool = list(self.fallback_models) if self.fallback_models else []
         max_attempts = self.max_retries if retry else 1
         attempt = 0
         last_error = None
 
-        while attempt < max_attempts:
-            try:
-                return await asyncio.wait_for(
-                    self._chat(messages, temp, max_tok),
-                    timeout=300,  # 5 Minuten Timeout pro Call
-                )
-            except Exception as e:
-                err_str = str(e).lower()
-                is_rate_limit = any(
-                    kw in err_str
-                    for kw in ["rate_limit", "rate limit", "429", "too many requests",
-                               "temporarily rate-limited"]
-                )
+        # Temporarily override model for this call (multi-model support)
+        original_model = self.model
+        if model is not None:
+            self.model = model
 
-                # Rate-Limit → Fallback-Modell, ohne Attempt zu verbrauchen
-                if is_rate_limit and fallback_pool:
-                    next_model = fallback_pool.pop(0)
-                    # Kontext aus dem Prompt extrahieren (erste 80 Zeichen)
-                    task_hint = (system_prompt[:80] + "...") if len(system_prompt) > 80 else system_prompt
-                    log.warning(
-                        f"⚠️ Rate-Limit auf '{self.model}' → "
-                        f"Fallback zu '{next_model}' "
-                        f"(Aufgabe: {task_hint})"
+        try:
+            while attempt < max_attempts:
+                try:
+                    return await asyncio.wait_for(
+                        self._chat(messages, temp, max_tok),
+                        timeout=300,
                     )
-                    self.model = next_model
-                    await asyncio.sleep(2)
+                except Exception as e:
+                    err_str = str(e).lower()
+
+                    # ── Moderation / 403 → sofort abbrechen ──
+                    is_moderation = any(
+                        kw in err_str
+                        for kw in ["403", "moderation", "flagged", "content_filter",
+                                   "sexual", "minors", "openinference"]
+                    )
+                    if is_moderation:
+                        log.warning(
+                            f"🛑 Moderation flag on '{self.model}': {str(e)[:200]}"
+                        )
+                        raise ModerationError(
+                            f"Content moderation flagged by {self.provider_key}: {str(e)[:300]}",
+                            schema_name="",
+                            last_raw=str(e),
+                            last_error=e,
+                        )
+
+                    is_rate_limit = any(
+                        kw in err_str
+                        for kw in ["rate_limit", "rate limit", "429", "too many requests",
+                                   "temporarily rate-limited"]
+                    )
+
+                    # Rate-Limit: use fallback model without consuming an attempt
+                    # WICHTIG: Pop aus self.fallback_models (nicht lokale Kopie),
+                    # damit die exhausted-Branch nicht dieselben Modelle wiederholt.
+                    if is_rate_limit and self.fallback_models:
+                        # Überspringe Fallback-Modelle == aktuellem Modell
+                        while self.fallback_models and self.fallback_models[0] == self.model:
+                            log.info(f"Skipping rate-limit fallback '{self.fallback_models[0]}' (same model)")
+                            self.fallback_models.pop(0)
+                        if self.fallback_models:
+                            next_model = self.fallback_models.pop(0)
+                            task_hint = (system_prompt[:80] + "...") if len(system_prompt) > 80 else system_prompt
+                            log.warning(
+                                f"⚠️ Rate-Limit on '{self.model}' → "
+                                f"Fallback to '{next_model}' (task: {task_hint})"
+                            )
+                            self.model = next_model
+                            await asyncio.sleep(2)
+                            last_error = e
+                            continue
+                        else:
+                            log.warning(f"⚠️ Rate-Limit on '{self.model}' → No more fallbacks available")
+
                     last_error = e
-                    continue
-
-                last_error = e
-                attempt += 1
-                log.warning(
-                    f"Provider '{self.provider_key}' attempt {attempt}/{max_attempts} "
-                    f"failed: {e}"
-                )
-                if attempt < max_attempts:
-                    delay = self.retry_delay * (2 ** (attempt - 1))
-                    await asyncio.sleep(delay)
-                else:
-                    log.error(
-                        f"All {max_attempts} attempts exhausted for provider '{self.provider_key}'"
+                    attempt += 1
+                    log.warning(
+                        f"Provider '{self.provider_key}' attempt {attempt}/{max_attempts} "
+                        f"failed: {e}"
                     )
+                    if attempt < max_attempts:
+                        delay = self.retry_delay * (2 ** (attempt - 1))
+                        await asyncio.sleep(delay)
+                    else:
+                        # ── Fallback-Kaskade: Wenn alle Retries fehlschlagen,
+                        #    versuche nacheinander Fallback-Modelle, dann Default.
+                        fell_back = False
 
-        raise RuntimeError(
-            f"AI generation failed after {max_attempts} attempts: {last_error}"
-        )
+                        # Fallback-Modelle durchgehen, bis ein neues gefunden wird
+                        while self.fallback_models:
+                            fb_model = self.fallback_models[0]
+                            if fb_model == self.model:
+                                log.info(f"Skipping fallback '{fb_model}' (same as current model)")
+                                self.fallback_models.pop(0)
+                                continue
+                            if fb_model == original_model:
+                                log.info(f"Skipping fallback '{fb_model}' (same as already-exhausted original)")
+                                self.fallback_models.pop(0)
+                                continue
+                            break
+
+                        if self.fallback_models:
+                            fb_model = self.fallback_models.pop(0)
+                            log.warning(
+                                f"Model '{self.model}' exhausted, "
+                                f"falling back to '{fb_model}'"
+                            )
+                            self.model = fb_model
+                            fell_back = True
+                        elif original_model and self.model != original_model:
+                            log.warning(
+                                f"Model '{self.model}' exhausted, "
+                                f"falling back to default '{original_model}'"
+                            )
+                            self.model = original_model
+                            fell_back = True
+
+                        if fell_back:
+                            attempt = 0
+                            last_error = None
+                            continue
+
+                        log.error(
+                            f"All {max_attempts} attempts exhausted for provider '{self.provider_key}'"
+                        )
+
+            raise RuntimeError(
+                f"AI generation failed after {max_attempts} attempts: {last_error}"
+            )
+        finally:
+            # Restore original model
+            self.model = original_model
 
     async def generate_json(
         self,
@@ -783,6 +858,7 @@ class BrokusAIClient:
         temperature: Optional[float] = None,
         max_tokens: int = 8000,
         retries: int = 3,
+        model: Optional[str] = None,
     ) -> T:
         """Generate a response and validate it against a Pydantic schema.
 
@@ -807,7 +883,10 @@ class BrokusAIClient:
         schema_name = schema.__name__
         schema_hint = (
             f"\n\nAntworte NUR mit einem JSON-Objekt, das diesem Schema entspricht:\n"
-            f"{json.dumps(schema.model_json_schema(), indent=2, ensure_ascii=False)}"
+            f"Respond ONLY with a JSON object that matches this schema:\n"
+            f"{json.dumps(schema.model_json_schema(), indent=2, ensure_ascii=False)}\n\n"
+            f"WICHTIG: KEIN Text vor/nach dem JSON. KEINE Codeblöcke (```). KEINE Erklärungen. NUR das reine JSON-Objekt.\n"
+            f"IMPORTANT: NO text before/after the JSON. NO code fences (```). NO explanations. ONLY the raw JSON object."
         )
         current_prompt = user_prompt + schema_hint
         last_raw = ""
@@ -815,15 +894,38 @@ class BrokusAIClient:
 
         for attempt in range(retries + 1):
             response = await self.generate(
-                system_prompt, current_prompt, temperature, max_tokens=max_tokens, retry=True
+                system_prompt, current_prompt, temperature, max_tokens=max_tokens, retry=True,
+                model=model,
             )
             last_raw = response.text.strip()
 
             # Try parsing JSON (with fallback cascade)
             parsed = self._extract_json(last_raw)
             if parsed is None:
-                last_error = json.JSONDecodeError("No JSON found", last_raw[:200], 0)
-                log.warning(f"{schema_name} attempt {attempt + 1}: no JSON found")
+                # Refusal-Erkennung: Modell verweigert Content → sofort abbrechen
+                if self._is_refusal(last_raw):
+                    log.info(
+                        f"{schema_name} attempt {attempt + 1}: model refused "
+                        f"(preview: {last_raw[:150]}) — fallback chain will handle"
+                    )
+                    raise LLMResponseError(
+                        f"Model refused content generation: {last_raw[:300]}",
+                        schema_name=schema_name,
+                        last_raw=last_raw,
+                        last_error=Exception("refusal"),
+                    )
+
+                preview = last_raw[:500]
+                last_error = json.JSONDecodeError("No JSON found", preview, 0)
+                log.info(
+                    f"{schema_name} attempt {attempt + 1}: no JSON found, "
+                    f"trying fallback..."
+                )
+                # Rate-Limit-Erkennung: rohe Antwort auf 429/Error prüfen
+                if any(kw in last_raw[:200].lower() for kw in ["rate", "429", "too many", "error", "offline"]):
+                    wait = min(2 ** (attempt + 1), 30)
+                    log.info(f"Rate-limit or error detected, sleeping {wait}s")
+                    await asyncio.sleep(wait)
             else:
                 try:
                     return schema.model_validate(parsed)
@@ -834,10 +936,12 @@ class BrokusAIClient:
             if attempt < retries:
                 # Build correction prompt
                 correction = (
-                    f"\n\nDeine letzte Antwort war ungültig:\n{last_error}\n\n"
-                    f"Antworte NUR mit gültigem JSON. Keine Erklärungen. Kein Präfix. Kein Suffix.\n"
-                    f"Das JSON MUSS exakt dem Schema entsprechen.\n\n"
-                    f"URSPRÜNGLICHE AUFGABE:\n{user_prompt}"
+                    f"\n\nDeine letzte Antwort war ungültig / Your last response was invalid:\n"
+                    f"{last_error}\n\n"
+                    f"Antworte NUR mit gültigem JSON. Keine Erklärungen. Kein Präfix. Kein Suffix. Keine Codeblöcke.\n"
+                    f"Respond ONLY with valid JSON. No explanations. No prefix. No suffix. No code fences.\n"
+                    f"Das JSON MUSS exakt dem Schema entsprechen / The JSON MUST match the schema exactly.\n\n"
+                    f"URSPRÜNGLICHE AUFGABE / ORIGINAL TASK:\n{user_prompt}"
                 )
                 current_prompt = correction
 
@@ -848,50 +952,160 @@ class BrokusAIClient:
             last_error=last_error,
         )
 
-    def _extract_json(self, text: str):
+    # ── Refusal-Erkennung ──
+    # Content-Policy-Verweigerungen frühzeitig erkennen und abbrechen.
+    # Nutzt Unicode-Normalisierung (NFKC) für Smart Quotes u.ä.
+    REFUSAL_PATTERNS: list[str] = [
+        r"i['\u2019\u2018]?m sorry",           # I'm / I am / Im sorry (mit Unicode ')
+        r"i am sorry",
+        r"i can'?t (help|assist|do|provide) (with )?that",
+        r"i'?m (unable|not able) to",
+        r"i cannot (provide|generate|create|help|assist)",
+        r"sorry,?\s*(but )?i (can'?t|cannot)",
+        r"as an ai (language )?model",
+        r"entschuldigung,?\s*(aber )?ich kann",
+        r"ich kann (dir |dabei |damit )?nicht helfen",
+        r"ich kann (das |diese |so )?nicht",
+        r"das kann ich (leider )?nicht",
+        r"tut mir leid,?\s*(aber )?ich",
+        r"i don'?t (have|meet) the (capability|requirement)",
+    ]
+    # Einmal kompilieren (IGNORECASE) — effizienter
+    _REFUSAL_REGEXES: list[re.Pattern] = [re.compile(p, re.IGNORECASE) for p in REFUSAL_PATTERNS]
+
+    @staticmethod
+    def _normalize_refusal_text(text: str) -> str:
+        """Normalisiert Unicode-Smart-Quotes, NBSP etc. zu ASCII."""
+        if not text:
+            return ""
+        # NFKC normalisiert viele typografische Zeichen
+        text = unicodedata.normalize("NFKC", text)
+        # Smart Quotes → ASCII (zusätzliche Sicherheit)
+        replacements = {
+            "\u2018": "'", "\u2019": "'",  # ' '
+            "\u201C": '"', "\u201D": '"',  # " "
+            "\u2032": "'", "\u2035": "'",  # ′ ‵
+            "\u00A0": " ",                  # NBSP
+            "\u2013": "-", "\u2014": "-",  # – —
+        }
+        for src, dst in replacements.items():
+            text = text.replace(src, dst)
+        return text.lower().strip()
+
+    def _is_refusal(self, text: str) -> bool:
+        """Check if the AI response is a content policy refusal.
+
+        Normalisiert zuerst Unicode (Smart Quotes → ASCII) und matched
+        dann gegen kompilierte Regexes (IGNORECASE).
+        """
+        if not text:
+            return False
+        normalized = self._normalize_refusal_text(text)[:300]
+        return any(rx.search(normalized) for rx in self._REFUSAL_REGEXES)
+
+    def _extract_json(self, text: str) -> Optional[dict | list]:
         """Extract and parse JSON from LLM response text.
 
-        Handles markdown code fences, extra text, and both {obj} and [arr].
-        Returns parsed Python object (dict/list/str) or None.
+        Mehrere Strategien:
+        1. Markdown-Codeblock-Fenster (```json ... ```)
+        2. Direkter Parse (wenn Text mit { oder [ beginnt)
+        3. Balanciertes JSON-Objekt/Array via Klammerzählung
+        4. Trailing-Comma-Reparatur als letzter Versuch
+
+        Returns:
+            Geparstes dict oder list, oder None.
         """
+        if not text or not text.strip():
+            return None
+
         t = text.strip()
 
-        # Strip markdown code fences
-        if "```" in t:
-            sf = t.find("```")
-            ef = t.rfind("```")
-            if sf != ef:
-                cs = t.find("\n", sf)
-                t = t[t.find("\n", sf) + 1:ef].strip() if cs >= 0 else t[sf + 3:ef].strip()
-            else:
-                nl = t.find("\n", sf)
-                t = t[nl + 1:].strip() if nl >= 0 else t[sf + 3:]
+        # Strategie 1: Markdown-Codeblock (```json ... ```)
+        fence_match = re.search(
+            r"```(?:json|JSON)?\s*(.*?)\s*```",
+            t,
+            re.DOTALL,
+        )
+        if fence_match:
+            candidate = fence_match.group(1).strip()
+            parsed = self._try_parse_json(candidate)
+            if parsed is not None:
+                return parsed
 
-        # Try direct parse
+        # Strategie 2: Direkter Parse (Antwort beginnt mit JSON)
+        if t and t[0] in "{[":
+            parsed = self._try_parse_json(t)
+            if parsed is not None:
+                return parsed
+
+        # Strategie 3: Balanciertes JSON irgendwo im Text finden
+        candidate = self._find_balanced_json(t)
+        if candidate:
+            parsed = self._try_parse_json(candidate)
+            if parsed is not None:
+                return parsed
+
+        # Strategie 4: Mit Trailing-Comma-Reparatur
+        if candidate:
+            repaired = re.sub(r",(\s*[\}\]])+", r"\1", candidate)
+            if repaired != candidate:
+                parsed = self._try_parse_json(repaired)
+                if parsed is not None:
+                    return parsed
+
+        # Strategie 5: Alles {…} oder […] mit Regex finden (als letzter Versuch)
+        for pattern in [r"\{(.*?)\}", r"\[(.*?)\]"]:
+            match = re.search(pattern, t, re.DOTALL)
+            if match:
+                candidate = match.group(0)
+                parsed = self._try_parse_json(candidate)
+                if parsed is not None:
+                    return parsed
+
+        return None
+
+    def _try_parse_json(self, text: str) -> Optional[dict | list]:
+        """Versuche, einen String als JSON zu parsen."""
         try:
-            return json.loads(t)
-        except json.JSONDecodeError:
-            pass
+            return json.loads(text)
+        except (json.JSONDecodeError, ValueError):
+            return None
 
-        # Try extracting {obj}
-        os_ = t.find("{")
-        oe = t.rfind("}") + 1
-        if os_ >= 0 and oe > os_:
-            try:
-                return json.loads(t[os_:oe])
-            except json.JSONDecodeError:
-                pass
+    def _find_balanced_json(self, text: str) -> Optional[str]:
+        """Findet das erste balancierte JSON-Objekt oder -Array (string-aware)."""
+        start = -1
+        for i, ch in enumerate(text):
+            if ch in "{[":
+                start = i
+                break
+        if start == -1:
+            return None
 
-        # Try extracting [arr]
-        as_ = t.find("[")
-        ae = t.rfind("]") + 1
-        if as_ >= 0 and ae > as_:
-            try:
-                r = json.loads(t[as_:ae])
-                return r
-            except json.JSONDecodeError:
-                pass
+        open_ch = text[start]
+        close_ch = "}" if open_ch == "{" else "]"
+        depth = 0
+        in_string = False
+        escape = False
 
+        for i in range(start, len(text)):
+            ch = text[i]
+            if escape:
+                escape = False
+                continue
+            if ch == "\\":
+                escape = True
+                continue
+            if ch == '"':
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch == open_ch:
+                depth += 1
+            elif ch == close_ch:
+                depth -= 1
+                if depth == 0:
+                    return text[start:i + 1]
         return None
 
     async def test_connection(self) -> bool:
@@ -1162,7 +1376,7 @@ class BrokusAIClient:
 
 
 # ─────────────────────────────────────────────────────────────
-# LLMResponseError
+# AI Error Hierarchy
 # ─────────────────────────────────────────────────────────────
 
 class LLMResponseError(Exception):
@@ -1186,6 +1400,16 @@ class LLMResponseError(Exception):
         self.last_raw = last_raw[:500]
         self.last_error = last_error
         super().__init__(message)
+
+
+class ModerationError(Exception):
+    """Raised when the provider flags the content for moderation (e.g. 403).
+
+    This is a separate error class because moderation errors should NOT
+    trigger fallback — the prompt itself is the problem, not the model.
+    Trying other models after a moderation flag risks account-level consequences.
+    """
+    pass
 
 
 # ─────────────────────────────────────────────────────────────
