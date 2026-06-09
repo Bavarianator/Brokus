@@ -171,10 +171,15 @@ class BookPipeline:
                     chapter_elements_descriptions.append(f"{e.id}: {e.description}")
 
             chapter_char_names = plan.get("characters", []) if isinstance(plan, dict) else plan.characters
-            chapter_characters = "\n".join(
-                f"  - {c.name}: {c.role}" for c in core_elements.characters
-                if c.name in chapter_char_names
-            ) if chapter_char_names else "Alle bisherigen Charaktere"
+            # Vollständige Charakter-Profile einbetten
+            chapter_characters = ""
+            for char_name in chapter_char_names:
+                for c in core_elements.characters:
+                    if c.name == char_name:
+                        chapter_characters += f"  - {c.name} (Rolle: {c.role}, Traits: {', '.join(c.traits)})\n"
+            
+            if not chapter_characters:
+                chapter_characters = "Alle bisherigen Charaktere"
 
             target_words = plan.get("estimated_words", 2000) if isinstance(plan, dict) else plan.estimated_words
 

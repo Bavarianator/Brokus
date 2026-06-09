@@ -1,361 +1,93 @@
 # ─────────────────────────────────────────────────────────────
-# brokus – KI-Prompts (Erweitert: DNA + Compliance)
+# brokus – KI-Prompts (Verbessert: Struktur, Constraints, Chain-of-Thought)
 # ─────────────────────────────────────────────────────────────
 
 system_prompt: |
-  Du bist ein professioneller Romanautor mit langjähriger Erfahrung.
-  Du schreibst auf Deutsch in einem lebendigen, fesselnden Stil.
-
-  WICHTIGE GRUNDSÄTZE:
-  1. Bleibe STRENG an der Buch-DNA und der originalen Buchidee. Weiche nicht ab.
-  2. Erzähle die Geschichte in einem angemessenen Tempo. Wenn noch viele Kapitel
-     folgen, löse Konflikte NICHT zu früh auf – baue Spannung auf, führe Wendungen ein.
-  3. Achte auf KONSISTENZ: Charaktere, Orte, Zeitlinie und Handlungsfäden müssen
-     stimmig bleiben. Widersprüche sind nicht erlaubt.
-  4. Zeige, nicht erkläre. Nutze alle Sinne in Beschreibungen.
-  5. Vermeide Klischees, passive Sprache und Füllwörter.
-  6. Jedes Kapitel muss die Geschichte voranbringen – entweder durch neue
-     Enthüllungen, Charakterentwicklung oder Vorbereitung auf kommende Ereignisse.
+  Du bist ein erstklassiger, professioneller Romanautor mit langjähriger Erfahrung.
+  Dein Ziel ist es, fesselnde, tiefgründige und konsistente Geschichten zu schreiben.
+  
+  ARBEITSWEISE:
+  1. DNA-TREUE: Du hältst dich AUSSCHLIESSLICH an die bereitgestellte Buch-DNA (Protagonist, Setting, Pflichtelemente). Jede Abweichung von der DNA ist ein Fehler.
+  2. SPANNUNGSBOGEN: Du arbeitest präzise auf die Phasen im Handlungsbogen hin.
+  3. KONSISTENZ: Du behältst die bisherige Geschichte, Charakter-Entwicklung und Informationen strikt bei. Widersprüche sind strikt zu vermeiden.
+  4. "SHOW, DON'T TELL": Beschreibe Szenen, Emotionen und Handlungen durch das, was Figuren tun und fühlen. Vermeide abstrakte Erklärungen.
+  5. STIL: Lebendig, fesselnd, sinnlich. Vermeide Klischees, Füllwörter und passive Formulierungen.
+  6. QUALITÄT: Jedes Kapitel muss eine abgeschlossene Einheit mit einem Ziel sein.
 
 # ─────────────────────────────────────────────────────────────
-# Schicht 1: DNA-Extraktion (Pre-Generation Lock)
+# Stufe 0: DNA-Extraktion
 # ─────────────────────────────────────────────────────────────
 dna_extraction_prompt: |
-  Analysiere diese Buchidee und extrahiere die UNVERÄNDERLICHE KERN-DNA.
-  Erfinde NICHTS. Nur was explizit in der Idee steht.
-
+  Analysiere die Buchidee und extrahiere die unveränderliche BUCH-DNA.
+  Dies ist das Fundament des Romans.
+  
   BUCHIDEE:
   {user_idea}
-
-  Extrahiere als JSON:
-  {{
-    "protagonistin": {{
-      "name": "...",
-      "alter_start": 0,
-      "geschlecht": "...",
-      "rolle": "..."
-    }},
-    "setting": {{
-      "ort": "...",
-      "ausgangssituation": "..."
-    }},
-    "gruppe": {{
-      "anzahl": 0,
-      "typ": "..."
-    }},
+  
+  Extrahiere strikt als JSON (kein Text davor/danach):
+  {
+    "protagonistin": { "name": "...", "alter_start": 0, "geschlecht": "...", "rolle": "..." },
+    "protagonist": { "name": "...", "alter_start": 0, "geschlecht": "...", "rolle": "..." },
+    "setting": { "ort": "...", "ausgangssituation": "..." },
     "zeitspanne": "...",
     "perspektive": "...",
-    "pflicht_handlungselemente": [
-      "Element 1",
-      "Element 2"
-    ],
-    "verbotene_abweichungen": [
-      "Verbot 1",
-      "Verbot 2"
-    ],
-    "themen_pflicht": [
-      "Thema 1"
-    ],
+    "pflicht_handlungselemente": [{"name": "...", "description": "..."}],
+    "verbotene_abweichungen": ["..."],
+    "themen_pflicht": ["..."],
     "ton": "..."
-  }}
-
-# ─────────────────────────────────────────────────────────────
-# Stufe 0: Kernelemente-Extraktion (legacy)
-# ─────────────────────────────────────────────────────────────
-core_elements_prompt: |
-  Analysiere die folgende Buchidee und extrahiere die feststehenden
-  Kernelemente als strukturiertes JSON. Diese Elemente MÜSSEN in
-  JEDEM Kapitel beachtet werden.
-
-  BUCHIDEE:
-  {book_idea}
-
-  Extrahiere:
-  - setting: Welt, Ort, Zeit, Atmosphäre (genau, nicht veränderbar)
-  - protagonist: Name, Alter, Eigenschaften, Motivation, interner Konflikt
-  - characters: Liste aller genannten Figuren mit Kurzbeschreibung
-  - core_conflict: Der zentrale Konflikt (1 Satz)
-  - mandatory_elements: Liste von 5-15 Pflicht-Handlungselementen
-  - themes: 3-5 zentrale Themen
-  - tone: Stimmung und Ton des Buches
-  - constraints: Was darf NICHT passieren?
-
-  Antworte NUR mit gültigem JSON.
+  }
 
 # ─────────────────────────────────────────────────────────────
 # Stufe 1: Synopsis
 # ─────────────────────────────────────────────────────────────
 synopsis_prompt: |
-  Erstelle eine strukturierte Synopsis für den Roman basierend auf
-  der Buchidee und den extrahierten Kernelementen.
-
-  BUCHIDEE:
-  {book_idea}
-
-  KERNELEMENTE:
-  {core_elements}
-
+  Erstelle eine detaillierte, dramaturgisch strukturierte Synopsis (800-1200 Wörter).
+  
+  BUCHIDEE: {book_idea}
+  KERNELEMENTE: {core_elements}
   GENRE: {genre}
-  STYLE-HINTS: {style_hints}
-
-  Die Synopsis sollte enthalten:
-  1. Einleitung (Setup & Status Quo, ca. 100 Wörter)
-  2. Auslösendes Ereignis (ca. 100 Wörter)
-  3. Steigende Handlung / Mittelteil (ca. 300 Wörter)
-  4. Höhepunkt (ca. 150 Wörter)
-  5. Auflösung / Ende (ca. 150 Wörter)
-
-  Gesamtlänge: 800-1000 Wörter. Schreibe auf {language}.
-
-# ─────────────────────────────────────────────────────────────
-# Stufe 2: Charaktere
-# ─────────────────────────────────────────────────────────────
-character_prompt: |
-  Erstelle detaillierte Charakterprofile für die Hauptfiguren.
-
-  BUCHIDEE:
-  {book_idea}
-
-  SYNOPSIS:
-  {synopsis}
-
-  KERNELEMENTE:
-  {core_elements}
-
-  Für jeden Charakter erstelle:
-  - Name, Alter, Aussehen
-  - Persönlichkeit
-  - Hintergrundgeschichte (3-5 Sätze)
-  - Motivation & Ziele
-  - Interne & externe Konflikte
-  - Beziehungen zu anderen Charakteren
-  - Sprachmuster & Manierismen
-  - Charakterbogen
-
-  Erstelle 3-6 Profile. Antworte als JSON-Objekt mit einem "characters"-Feld, das die Profile als Array enthält.
+  HINWEISE: {style_hints}
+  
+  STRUKTUR:
+  1. EXPOSITION: Status Quo, Protagonist, Welt, Motivation.
+  2. AUSLÖSER: Das Ereignis, das die Geschichte in Gang setzt.
+  3. STEIGENDE HANDLUNG: Die wichtigsten Wendepunkte und Konflikte.
+  4. HÖHEPUNKT: Der finale Konflikt.
+  5. AUFLÖSUNG: Nachwirkungen, neue Weltordnung.
+  
+  Schreibe auf {language}.
 
 # ─────────────────────────────────────────────────────────────
-# Stufe 3: Kapitelplan
-# ─────────────────────────────────────────────────────────────
-chapter_plan_prompt: |
-  Erstelle einen detaillierten Kapitelplan für {num_chapters} Kapitel.
-
-  BUCHIDEE:
-  {book_idea}
-
-  SYNOPSIS:
-  {synopsis}
-
-  CHARAKTERE:
-  {characters}
-
-  KERNELEMENTE:
-  {core_elements}
-
-  PFLICHTELEMENTE (nicht abgehandelt):
-  {pending_elements}
-
-  WICHTIG: Verteile die Pflichtelemente GLEICHMÄSSIG über ALLE {num_chapters} Kapitel.
-  Verschwende NICHT alle wichtigen Elemente in den ersten Kapiteln.
-  Jedes Kapitel sollte mindestens 1-2 Pflichtelemente behandeln.
-  Die ersten 20% der Kapitel dienen der Einführung.
-  Die mittleren 60% der Kapitel entfalten die Haupthandlung.
-  Die letzten 20% der Kapitel führen zur Auflösung.
-  Baue neue Wendungen und Konflikte ein, die aus den bestehenden Elementen entstehen.
-
-  Für jedes Kapitel:
-  - "number": Kapitelnummer
-  - "title": Titel
-  - "summary": Zusammenfassung (2-3 Sätze)
-  - "elements": Liste der Pflichtelemente-IDs (maximal 2-3 pro Kapitel)
-  - "characters": Liste der Charakternamen
-  - "setting": Schauplatz
-  - "mood": Stimmung / Ton
-  - "estimated_words": Geschätzte Wortanzahl (1500-2500)
-
-  Stelle sicher, dass ALLE Pflichtelemente auf die Kapitel VERTEILT werden –
-  nicht alle in den ersten Kapiteln. Antworte als JSON-Objekt mit einem
-  "chapters"-Feld, das {num_chapters} Einträge enthält. Verwende GENAU diese
-  Feldnamen für jeden Eintrag (number, title, summary, elements, characters,
-  setting, mood, estimated_words).
-
-# ─────────────────────────────────────────────────────────────
-# Schicht 2: Kapitel-Briefing mit DNA (In-Generation Lock)
+# Kapitel-Schreib-Prompt (Verbessert mit mehr Kontext)
 # ─────────────────────────────────────────────────────────────
 chapter_prompt_with_dna: |
-  ════════════════════════════════════════════
-  🧬 BUCH-DNA (UNVERÄNDERLICH – LIES ZUERST)
-  ════════════════════════════════════════════
-
+  Du schreibst Kapitel {chapter_number} ("{chapter_title}").
+  
+  [BUCH-DNA]
   {dna_block}
-
-  ════════════════════════════════════════════
-  📖 ORIGINALE BUCHIDEE (BLEIBE DEM TREU)
-  ════════════════════════════════════════════
-
-  {book_idea}
-
-  ════════════════════════════════════════════
-  📖 KONTEXT
-  ════════════════════════════════════════════
-
-  📌 POSITION IM HANDLUNGSBOGEN: {story_phase}
-
+  
+  [HANDLUNGSKONTEXT]
+  Phase: {story_phase}
   Synopsis: {synopsis}
-  Charaktere: {characters}
   Bisherige Geschichte: {story_context}
-
-  ════════════════════════════════════════════
-  ✍️ SCHREIBE KAPITEL {chapter_number}: "{chapter_title}"
-  ════════════════════════════════════════════
-
-  Zielwörter: {target_words}
-  Genre: {genre}
-
-  🎯 IN DIESEM KAPITEL PFICHT:
+  
+  [DEINE AUFGABE]
+  Schreibe dieses Kapitel (ca. {target_words} Wörter) auf {language}.
+  
+  PFICHTELEMENTE FÜR DIESES KAPITEL:
   {chapter_elements}
-
-  Diese Elemente MÜSSEN in diesem Kapitel vorkommen. Verteile sie
-  gleichmäßig über die Handlung – nicht alle auf einmal am Anfang.
-  Wenn keine spezifischen Elemente genannt sind, wähle eigene,
-  die zur Buchidee und zum Handlungsbogen passen.
-
+  
+  CHARAKTERE:
+  {characters}
+  
+  ANWEISUNGEN:
+  1. DNA-TREUE: Die DNA ist Gesetz. Wenn sie sagt, der Ort ist X, ist es X. Wenn sie sagt, Protagonist ist Y Jahre, ist er Y Jahre.
+  2. KONTINUITÄT: Integriere Ereignisse aus dem bisherigen Kontext organisch.
+  3. SPANNUNG: Nutze das aktuelle Ziel (Pflichtelemente), um Spannung zu erzeugen oder den Plot voranzutreiben.
+  4. DETAIL: Wenn Detailgrad 'strikt' ist, keine neuen Elemente erfinden. Wenn 'locker', nutze Freiheit.
   {chapter_context_extra}
-
-  WICHTIGE HINWEISE:
-  - Bleibe der ORIGINALEN BUCHIDEE treu. Weiche nicht ab.
-  - Erzähle in einem Tempo, das zur Position im Handlungsbogen passt.
-  - Wenn noch viele Kapitel folgen, löse die Konflikte NICHT zu früh auf.
-    Baue stattdessen Spannung auf, führe neue Wendungen ein.
-  - Wenn nur noch wenige Kapitel folgen, treibe die Handlung auf den
-    Höhepunkt zu und löse die offenen Konflikte auf.
-  - Nutze die bisherige Handlung als Grundlage, aber füge neue
-    Entwicklungen, Enthüllungen oder Konflikte hinzu.
-  - Achte darauf, dass die Charaktere konsistent bleiben und sich
-    entsprechend der Geschichte entwickeln.
-  - Die Geschichte muss sich organisch aus den vorherigen Kapiteln
-    und der ursprünglichen Idee entwickeln.
-
-  NACH dem Schreiben: Füge am Ende diesen Report an:
-  ---KAPITEL-REPORT---
-  ENTHALTENE_PFLICHTELEMENTE: [Liste]
-  PROTAGONIST_ALTER: [Zahl]
-  STORY_JAHR: [Zahl]
-  NEUE_CHARAKTERE: [Liste oder keine]
-  NEUE_KONFLIKTE: [Liste oder keine]
-  ---ENDE-REPORT---
-  {correction_instructions}
-
-  Sprache: {language}
-
-# ─────────────────────────────────────────────────────────────
-# Legacy-Stufe 4: Kapitel schreiben (ohne DNA)
-# ─────────────────────────────────────────────────────────────
-chapter_prompt: |
-  Schreibe Kapitel {chapter_number} mit dem Titel "{chapter_title}".
-
-  BUCHIDEE:
-  {book_idea}
-
-  KAPITELPLAN (dieses Kapitel):
-  {chapter_plan}
-
-  STORY-CONTEXT (bisherige Kapitel):
-  {story_context}
-
-  KERNELEMENTE (beachte ALLE):
-  {core_elements}
-
-  PFLICHTELEMENTE FÜR DIESES KAPITEL:
-  {chapter_elements}
-
-  CHARAKTERE IN DIESEM KAPITEL:
-  {chapter_characters}
-
-  GENRE: {genre}
-  STYLE-HINTS: {style_hints}
-
-  ANFORDERUNGEN:
-  - Länge: {target_words} Wörter (±10%)
-  - Zeige, erkläre nicht
-  - Nutze alle Sinne
-  - Bleibe in der Perspektive
-  - Kein Head-Hopping
-  - Ende mit einem Mini-Cliffhanger oder starkem Abschluss
-
-  Schreibe auf Deutsch. Beginne direkt mit dem Kapiteltext.
-
-# ─────────────────────────────────────────────────────────────
-# Schicht 3: Compliance-Audit (Post-Generation Audit)
-# ─────────────────────────────────────────────────────────────
-compliance_check_enhanced_prompt: |
-  Du bist ein strenger Lektor. Prüfe dieses Kapitel gegen die Buch-DNA.
-
-  BUCH-DNA:
-  {dna}
-
-  KAPITEL-INHALT:
-  {chapter_text}
-
-  PFLICHT-ELEMENTE FÜR DIESES KAPITEL:
-  {required_elements}
-
-  Antworte NUR mit JSON:
-  {{
-    "score": 0-100,
-    "perspektive_korrekt": true/false,
-    "setting_korrekt": true/false,
-    "protagonist_alter_korrekt": true/false,
-    "pflicht_erfüllt": ["Element 1", "Element 2"],
-    "pflicht_fehlt": ["Element 3"],
-    "verbote_verletzt": [],
-    "probleme": ["Problem 1", "Problem 2"],
-    "empfehlung": "ok" | "retry" | "edit",
-    "korrektur_anweisungen": "Konkrete Anweisungen was zu korrigieren ist",
-    "style_quality": 1-10,
-    "summary": "Kurze Zusammenfassung"
-  }}
-
-# ─────────────────────────────────────────────────────────────
-# Legacy: Compliance-Check (ohne DNA)
-# ─────────────────────────────────────────────────────────────
-compliance_check_prompt: |
-  Prüfe das folgende Kapitel auf Compliance mit den Vorgaben.
-
-  KAPITELTEXT:
-  {chapter_text}
-
-  KERNELEMENTE:
-  {core_elements}
-
-  PFLICHTELEMENTE FÜR DIESES KAPITEL:
-  {chapter_elements}
-
-  Prüfe:
-  1. Werden die Pflichtelemente behandelt?
-  2. Passt der Ton zum vorgegebenen Ton?
-  3. Gibt es Widersprüche zum Setting?
-  4. Sind die Charaktere konsistent?
-  5. Gibt es unerwünschte Elemente (Constraints verletzt)?
-  6. Qualität des Schreibstils (1-10)
-
-  Vergib einen Gesamt-Compliance-Score von 0-100.
-  Bei Score < 80: Gib konkrete Korrekturanweisungen.
-  Antworte als JSON.
-
-# ─────────────────────────────────────────────────────────────
-# Fortsetzung (Auto-Continuation)
-# ─────────────────────────────────────────────────────────────
-continuation_prompt: |
-  Setze das Kapitel fort. Der bisherige Text endet hier:
-
-  {previous_chunk}
-
-  KERNELEMENTE:
-  {core_elements}
-
-  PFLICHTELEMENTE:
-  {chapter_elements}
-
-  Schreibe {remaining_words} weitere Wörter und schließe das Kapitel
-  organisch ab. Achte auf nahtlosen Übergang und konsistenten Stil.
+  
+  NACH DEM SCHREIBEN:
+  Beende den Text mit dem ---KAPITEL-REPORT--- Block (wie spezifiziert), um die Konsistenz für das nächste Kapitel zu sichern.
+  
+  Beginne jetzt mit dem Kapiteltext.

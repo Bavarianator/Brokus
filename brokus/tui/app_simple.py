@@ -19,6 +19,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.rule import Rule
+from rich.box import ROUNDED, HEAVY
+from rich.text import Text
 
 from brokus.utils.i18n import (
     t, set_language, get_language, available_languages, language_name,
@@ -398,27 +400,27 @@ def _easter_egg_42():
 
 
 def banner():
-    """Print the BROKUS block-letter ASCII banner."""
+    """Print the BROKUS block-letter ASCII banner with gradient and tagline."""
     console.print()
-    console.print(
-        "[bold bright_blue]"
-        + "\n".join(
-            [
-                "██████  ██████   ██████  ██   ██ ██    ██ ███████ ",
-                "██   ██ ██   ██ ██    ██ ██  ██  ██    ██ ██      ",
-                "██████  ██████  ██    ██ █████   ██    ██ ███████ ",
-                "██   ██ ██   ██ ██    ██ ██  ██  ██    ██      ██ ",
-                "██████  ██   ██  ██████  ██   ██  ██████  ███████ ",
-            ]
-        )
-        + "[/bold bright_blue]"
-    )
+    lines = [
+        "██████  ██████   ██████  ██   ██ ██    ██ ███████ ",
+        "██   ██ ██   ██ ██    ██ ██  ██  ██    ██ ██      ",
+        "██████  ██████  ██    ██ █████   ██    ██ ███████ ",
+        "██   ██ ██   ██ ██    ██ ██  ██  ██    ██      ██ ",
+        "██████  ██   ██  ██████  ██   ██  ██████  ███████ ",
+    ]
+    gradient = ["bright_cyan", "cyan", "bright_blue", "blue", "bright_magenta"]
+    for line, color in zip(lines, gradient):
+        console.print(f"[bold {color}]{line}[/bold {color}]")
+    console.print()
+    console.print("[dim italic]      ✦ AI-powered Buchgenerator ✦[/dim italic]")
+    console.print(Rule(style="bright_blue", characters="─"))
     console.print()
 
 
 def section(title: str):
     console.print()
-    console.print(Rule(title, style="bright_blue"))
+    console.print(Rule(f"  {title}  ", style="bright_blue", characters="━"))
     console.print()
 
 
@@ -448,25 +450,26 @@ def ask_password(prompt_text: str) -> str:
 
 
 def choose(prompt_text: str, options: list[str | None]) -> int:
-    """Show numbered options, read choice via raw reader.
-
-    ``None`` values in ``options`` are rendered as visual separators
-    (dimmed horizontal lines) and are not selectable.
-    """
-    if prompt_text:
-        console.print(f"\n[bold]{prompt_text}[/bold]")
-    console.print()
+    """Show numbered options in a Panel, read choice via raw reader."""
     valid_options: list[str] = []
+    
+    # Render options content
+    options_text = Text()
     for opt in options:
         if opt is None:
-            console.print("  [dim]───────────────────[/dim]")
+            options_text.append("─────────────────────────\n", style="dim")
         else:
             valid_options.append(opt)
-            console.print(f"  [cyan]{len(valid_options)}[/cyan]. {opt}")
-    console.print()
+            idx = len(valid_options)
+            options_text.append(f"[{idx}] ", style="bold cyan")
+            options_text.append(f"{opt}\n")
+            
+    # Display in Panel
+    console.print(Panel(options_text, title=f"[bold]{prompt_text}[/bold]", border_style="bright_blue", box=ROUNDED))
+    
     while True:
         try:
-            raw = _read_line(f"  {t('common.your_choice')}")
+            raw = _read_line(f"  {t('common.your_choice')} > ")
         except (KeyboardInterrupt, EOFError):
             console.print("\n[dim]Abgebrochen.[/dim]")
             return -1
@@ -569,18 +572,23 @@ async def main_menu():
         banner()
 
         has_key = _has_api_key()
-        key_status = "[green]✓ gesetzt[/green]" if has_key else "[red]✗ fehlt[/red]"
+        key_status = "[green]✓[/green]" if has_key else "[red]✗[/red]"
         lang_label = language_name(get_language())
-        console.print(f"  {t('label.provider')} [bold]{settings.provider}[/bold]  |  {t('label.model')} [bold]{settings.model}[/bold]  |  {t('label.api_key')} {key_status}  |  🌐 [bold]{lang_label}[/bold]")
-        console.print()
+        
+        # Status Panel
+        status_panel = Panel(
+            f"Provider: [bold]{settings.provider}[/bold]  |  Modell: [bold]{settings.model}[/bold]  |  Key: {key_status}  |  🌐 [bold]{lang_label}[/bold]",
+            box=ROUNDED, border_style="bright_blue"
+        )
+        console.print(status_panel)
 
         choice = choose(t("main.title"), [
-            t("main.quick_book"),
-            t("main.master"),
-            t("main.library"),
-            t("main.settings"),
-            f"🌐  Sprache / Language (aktuell: {lang_label})",
-            t("main.quit"),
+            f"⚡ {t('main.quick_book')}",
+            f"✨ {t('main.master')}",
+            f"📖 {t('main.library')}",
+            f"⚙️  {t('main.settings')}",
+            f"🌐 {t('language.choose')} ({lang_label})",
+            f"🚪 {t('main.quit')}",
         ])
 
         if choice == 0:
