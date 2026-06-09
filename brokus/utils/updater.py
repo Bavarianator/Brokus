@@ -213,22 +213,47 @@ async def perform_update(status: UpdateStatus) -> tuple[bool, str]:
         return False, f"git pull error: {e}"
 
     # Step 2: pip install -e .
-    try:
-        log.info("Updating: pip install -e .", stage="Update")
-        proc = await asyncio.create_subprocess_exec(
-            sys.executable, "-m", "pip", "install", "-e", ".",
-            cwd=str(project_root),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
-        if proc.returncode != 0:
+    pip_args = [sys.executable, "-m", "pip", "install", "-e", "."]
+    pip_args_fallback = pip_args + ["--break-system-packages"]
+
+    for attempt_args, attempt_label in [(pip_args, "pip install"), (pip_args_fallback, "pip install --break-system-packages")]:
+        try:
+            log.info(f"Updating: {attempt_label}", stage="Update")
+            proc = await asyncio.create_subprocess_exec(
+                *attempt_args,
+                cwd=str(project_root),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+            if proc.returncode == 0:
+                log.info(f"{attempt_label} OK", stage="Update")
+                return True, f"Update to v{status.latest_version} erfolgreich! Bitte neustarten."
+
             err_msg = stderr.decode().strip() or stdout.decode().strip()[:200]
+
+            # PEP 668 (externally-managed-environment) → Fallback mit --break-system-packages
+            if "externally-managed" in err_msg.lower():
+                if attempt_args is pip_args_fallback:
+                    # Zweiter Versuch hat auch nichts gebracht → aufgeben
+                    return False, f"pip install failed: {err_msg}"
+                log.info(f"PEP 668 detected — retrying with --break-system-packages", stage="Update")
+                continue
+
+            # Anderer Fehler → abbrechen
             return False, f"pip install failed: {err_msg}"
-        log.info(f"pip install OK", stage="Update")
-    except asyncio.TimeoutError:
-        return False, "pip install timed out (120s)"
-    except Exception as e:
-        return False, f"pip install error: {e}"
+        except asyncio.TimeoutError:
+            if attempt_args is pip_args_fallback:
+                return False, "pip install timed out (120s) — auch mit --break-system-packages"
+            log.info(f"pip install timed out — retrying mit --break-system-packages", stage="Update")
+            continue
+        except Exception as e:
+            if attempt_args is pip_args_fallback:
+                return False, f"pip install error: {e}"
+            log.info(f"pip error: {e} — retrying mit --break-system-packages", stage="Update")
+            continue
+
+    # Beide Versuche erschöpft → Fehler
+    return False, "pip install fehlgeschlagen – auch mit --break-system-packages"
 
     return True, f"Update to v{status.latest_version} erfolgreich! Bitte neustarten."
