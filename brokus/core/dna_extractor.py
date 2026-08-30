@@ -4,6 +4,7 @@ Extrahiert die unveränderliche Buch-DNA aus der User-Idee.
 Diese DNA wird in JEDEN Prompt eingebettet und verhindert Drift.
 """
 
+from typing import Optional
 from brokus.ai.client import AIClient, LLMResponseError
 from brokus.ai.prompts import PromptLoader
 from brokus.ai.schemas import DNAResponse, Handlungselement

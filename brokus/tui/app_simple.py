@@ -885,7 +885,15 @@ async def generate_book(idea: str, title: str, genre_key: str, num_chapters: int
     section("📖 Generierung")
 
     if not _has_api_key():
-        console.print("[red]❌ Kein API-Key gesetzt! Gehe zuerst zu Einstellungen → API-Key.[/red]")
+        from rich.panel import Panel
+        console.print()
+        console.print(Panel.fit(
+            "[bold red]✗ Kein API-Key gefunden[/bold red]\n\n"
+            "[dim]Gehe zu [bold cyan]Einstellungen → API-Key[/bold cyan] und konfiguriere einen Provider (OpenAI, Anthropic, Groq etc.).[/dim]\n\n"
+            "[yellow]Env-Variablen-Beispiele:[/yellow] OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY",
+            title="[bold red]Fehler[/bold red]",
+            border_style="red",
+        ))
         pause()
         return
 
@@ -957,11 +965,12 @@ async def generate_book(idea: str, title: str, genre_key: str, num_chapters: int
 
         # ── Progress callback: live updates during generation ──
         def on_progress(stage: str, progress: float, message: str):
-            bar_len = 20
+            bar_len = 24
             filled = int(progress * bar_len)
-            bar = f"[{'#' * filled}{'·' * (bar_len - filled)}]"
+            bar = f"[{'█' * filled}{'░' * (bar_len - filled)}]"
             pct = int(progress * 100)
-            console.print(f"  {bar} {pct:>3}%  {stage}: {message}")
+            color = "green" if pct >= 75 else ("yellow" if pct >= 40 else "red")
+            console.print(f"  [{color}]{bar}[/{color}] [bold]{pct:>3}%[/bold]  [cyan]{stage}[/cyan]: {message}")
 
         pipeline.set_progress_callback(on_progress)
 
