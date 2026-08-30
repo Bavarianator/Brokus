@@ -21,6 +21,12 @@ TARGET_LINK="$TARGET_DIR/brokus"
 
 cd "$SCRIPT_DIR"
 
+echo -e "\033[1;35m╔════════════════════════════════════════════════════════════╗\033[0m"
+echo -e "\033[1;35m║\033[0m  \033[1;36mBrokuS\033[0m  — KI-Buchgenerator im Terminal               \033[1;35m║\033[0m"
+echo -e "\033[1;35m╚════════════════════════════════════════════════════════════╝\033[0m"
+echo -e "\033[2m  Drei-Schichten-System · DNA-Extraktion · 33+ Provider\033[0m"
+echo -e ""
+
 # ── rclone automatisch installieren (Cloud-Upload) ──
 if ! command -v rclone &>/dev/null; then
     echo "📦 brokus: Installiere rclone (Cloud-Upload für 40+ Anbieter)..." >&2

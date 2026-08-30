@@ -2680,6 +2680,14 @@ async def first_time_wizard():
 # ─────────────────────────────────────────────────────────────
 
 async def _app_entry():
+    from brokus import __version__
+    console.print()
+    console.print(Panel.fit(
+        "[bold cyan]BrokuS[/bold cyan]  —  KI-Buchgenerator  [dim]v" + str(__version__) + "[/dim]\n"
+        "[dim]Drei-Schichten-System · DNA-Extraktion · Automatische Konformitätsprüfung[/dim]",
+        title="[bold magenta]Willkommen[/bold magenta]",
+        border_style="magenta",
+    ))
     if _is_first_run():
         await first_time_wizard()
     await main_menu()
