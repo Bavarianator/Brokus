@@ -4,6 +4,7 @@ Extracts hard facts from the user's book idea as structured JSON.
 These elements are embedded into EVERY subsequent prompt to prevent drift.
 """
 
+from typing import Optional
 import re
 
 from brokus.ai.client import AIClient, LLMResponseError

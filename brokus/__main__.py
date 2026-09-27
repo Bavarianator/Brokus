@@ -109,6 +109,10 @@ def main():
         help="Show active cloud providers and their connection status",
     )
     parser.add_argument(
+        "--quick-check", action="store_true",
+        help="Quick-check AI provider config and show status (no full generation)",
+    )
+    parser.add_argument(
         "--no-cloud", action="store_true",
         help="Skip cloud upload prompt for this run",
     )
@@ -126,6 +130,33 @@ def main():
     if args.cloud_setup:
         from brokus.core.cloud.manager import CloudManager
         CloudManager().setup_wizard()
+        return
+
+    if args.quick_check:
+        import os
+        from rich.console import Console
+        from rich.table import Table
+        console = Console()
+        console.print("[bold cyan]BrokuS – Schnell-Check[/bold cyan]  [dim]AI-Provider-Status[/dim]\n")
+        try:
+            from brokus.ai.model_discovery import ModelDiscovery
+            md = ModelDiscovery()
+            providers = md.list_providers() if hasattr(md, 'list_providers') else []
+            table = Table(title="Aktive Provider", show_header=True, header_style="bold magenta")
+            table.add_column("Name", style="cyan")
+            table.add_column("Status", style="bold")
+            table.add_column("Modelle", justify="right")
+            try:
+                models = md.discover() if hasattr(md, 'discover') else []
+                count = len(models) if isinstance(models, list) else 0
+            except Exception:
+                count = 0
+            table.add_row("Alle (discovered)", "[green]✓ Erreichbar[/green]" if count > 0 else "[yellow]⚠ Unklar[/yellow]", str(count))
+            console.print(table)
+            console.print(f"\n[dim]Config: {os.path.expanduser('~/.config/brokus/')}[/dim]")
+            console.print("[bold green]✓ Schnell-Check abgeschlossen.[/bold green]")
+        except Exception as e:
+            console.print(f"[bold red]✗ Fehler bei Schnell-Check:[/bold red] {e}")
         return
 
     if args.cloud_status:
